@@ -18,7 +18,8 @@ Module Lect2.
 
     Check @pair nat bool 42 true.
 
-    Notation "A * B" := (prod A B) (at level 40, left associativity) : type_scope.
+    Notation "A * B" :=
+      (prod A B) (at level 40, left associativity) : type_scope.
 
     (** Notation scopes *)
 
@@ -249,8 +250,8 @@ Module Lect2.
     Definition eq_sym A (x y : A) :
     (* x = y -> y = x := *)
       eq x y -> eq y x :=
-      fun proof_x_eq =>
-        match proof_x_eq with
+      fun proof_x_eq_y =>
+        match proof_x_eq_y with
         | (* x = y *) eq_refl => (* y := x *) eq_refl x
      (* |             eq_refl =>             eq_refl x : eq x x *)
         end.
@@ -281,15 +282,135 @@ Module Lect2.
         | bad_eq_refl' x => bad_eq_refl' x
         end.
 
-  End Propositional_Equality.
+    Definition eq_trans A (x y z : A) :
+      x = y -> (y = z -> x = z) :=
+      fun x_eq_y : x = y =>
+        match x_eq_y with
+     (* | eq_refl => ??? : y = z -> x = z *)
+     (* | eq_refl => ??? : x = z -> x = z *)
+        | eq_refl => id
+        end.
 
-  Section Stuff1.
+    Definition eq_foo (x y z : nat) :
+      x + y = y + z -> (x + y) + z = (y + z) + z :=
+      fun prf_eq =>
+        match prf_eq with
+     (* | eq_refl => eq_refl ??? : (x + y) + z = (y + z) + z *)
+     (* | eq_refl => eq_refl ??? : (x + y) + z = (y + z) + z *)
+        | eq_refl => eq_refl ((x + y) + z)
+        end.
+
     Inductive foo (A : Type) (a : A) : A -> A -> Prop :=
       | foo_ctor : foo a a a.
 
     Definition foo_blah A (x : A) :
       foo x x x := foo_ctor x.
 
-  End Stuff1.
+    Lemma A_implies_B (A : Prop) :
+      A -> A.
+    Proof. (* optional *)
+      Show Proof. (* (fun A : Prop => ?Goal) *)
+      move=> a.
+      Show Proof. (* (fun (A : Prop) (a : A) => ?Goal) *)
+      exact: a.
+      Undo 2.
+      by [].
+    Qed.
+
+    (*
+    Язык тактик можно применять, чтобы писать код.
+    Код и доказательства это одно и тоже.
+    *)
+
+    Lemma or_and_distr' A B C :
+      (A \/ B) /\ C -> A /\ C \/ B /\ C.
+    Proof.
+      case. (* делает паттерн-матчинг *)
+            (* "case" по сути тоже самое, что и "move=> []" *)
+      (* Show Proof. *)
+      case.
+      (* Show Proof. *)
+      - move=> a c.
+        left.  (* доказываем/строим (конструктор) [or_introl] *)
+               (* нам нужно доказать/построить и [A] и [C]    *)
+        split. (* разбиваем это на 2 подцели тактикой [split] *)
+               (* и строим каждое отдельно *)
+        + exact: a.
+          exact c. (* тут [+] не ставим (тк этo последняя ветка) *)
+      - move=> b c.
+        right.
+        split.
+        + exact b.
+          apply c. (* [exact] и [apply] - синонимы *)
+    Qed.
+    (* Defined. *)
+    About or_and_distr'.
+
+    Lemma or_and_distr'' A B C :
+      (A \/ B) /\ C -> A /\ C \/ B /\ C.
+    Proof.
+      by move=> [[a | b] c]; [left | right].
+    Qed.
+
+    Section HilbertSaxiom.
+
+      Variables A B C : Prop.
+
+      Lemma HilbertS :
+        (A -> B -> C) -> (A -> B) -> A -> C.
+      Proof.
+        move=> hAiBiC hAiB hA.
+        move: hAiBiC.
+        apply.
+        (* - exact hA. move: hA. exact hAiB. *)
+        - by [].
+          move: hAiB.
+          apply.
+          by [].
+      Qed.
+
+    End HilbertSaxiom.
+
+    Section Rewrite.
+
+      Variable A : Type.
+
+      Implicit Types x y z : A.
+
+      Lemma eq_reflexive' x :
+        x = x.
+      (* Proof. exact: (eq_refl). Qed. *)
+      Proof. by []. Qed.
+
+      Lemma eq_sym' x y :
+        x = y -> y = x.
+      Proof.
+        move=> x_eq_y.
+        rewrite -x_eq_y.
+        by [].
+        Show Proof.
+      (* QED. *)
+      Defined.
+      Eval compute in eq_sym'.
+
+
+      Lemma eq_sym_shorter x y :
+        x = y -> y = x.
+      Proof.
+        by move=> ->.
+      Qed.
+
+      Lemma eq_trans' x y z :
+        x = y -> y = z -> x = z.
+      Proof. move=> ->. by apply. Qed.
+      (* Proof. move=> ->. move=> ->. by []. Qed. *)
+      (* Proof. move=> ->->. by []. Qed. *)
+      (* Proof. move=> ->->. apply: eq_reflexive'. Qed. *)
+      (* Proof. move=> a; rewrite a; clear a; by apply. Qed. *)
+      (* Proof. move=> ->. apply id. Qed. *)
+
+    End Rewrite.
+
+  End Propositional_Equality.
 
 End Lect2.
