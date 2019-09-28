@@ -52,18 +52,22 @@ Proof.
   exact Q_holds.
 Qed.
 
-Section LongShit.
-
-  Variables A B C D E F G : Prop.
-
-  Lemma long_shit' :
-    (A -> B -> C -> D) -> (A -> B -> C) -> (A -> B) -> A -> D.
-  Proof.
-    move=> H1 H2 H3 H4.
-    move: H1.
-    apply.
-  Qed.
-
-End LongShit.
+Section LongSmth.
+Variables A B C D E F G : Prop.
+Lemma long_smth' :
+  (A -> B -> C -> D) -> (A -> B -> C) -> (A -> B) -> A -> D.
+Proof.
+  move=> H1 H2 H3 H4.
+  move: H2.
+  (* Здесь C (заключение импликации) сопоставляется с D (хвост цели).
+     А они не одинаковы, получаем ошибку. *)
+  Undo 1.
+  (* move: H1. apply. exact H4. *)
+  (* move: H3. apply. exact H4. *)
+  (* move: H2. apply. exact H4. *)
+  (* move: H3. apply. exact H4. *)
+  exact: (H1 H4 (H3 H4) (H2 H4 (H3 H4))).
+Qed.
+End LongSmth.
 
 End Playground2.

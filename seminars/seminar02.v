@@ -1,4 +1,5 @@
 From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat.
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
@@ -13,7 +14,6 @@ Definition flip {A B C} (f : A -> B -> C) : B -> A -> C :=
 Arguments const {A B} a _ /.
 Arguments flip {A B C} f b a /.
 
-
 (* move to logic_exercises *)
 Section IntLogic.
 
@@ -23,39 +23,76 @@ Lemma axiomK :
   A -> B -> A.
 Proof. exact: const. Qed.
 
-
 (* note: flip is more general *)
 Lemma contraposition :
+  (* (A -> (B -> False)) -> (B -> (A -> False)) *)
   (A -> ~ B) -> (B -> ~ A).
-Proof. exact: flip. Qed.
+(* Proof. exact: flip. Qed. *)
+Proof. rewrite /not. Check flip. exact: flip. Qed.
 
-Lemma p_imp_np_iff_np : (A -> ~A) <-> ~A.
+Lemma p_imp_np_iff_np :
+  (* Which is equivalent to:
+  ((A -> (A -> False)) -> (A -> False))        /\
+  ((A -> False)        -> (A -> (A -> False)))
+  *)
+  (A -> ~A) <-> ~A.
 Proof.
   split.
   - move => a_i_not_a a.
     exact: (a_i_not_a a).
-  -
-    move => not_a _.
+  - move => not_a _.
     exact: not_a.
 Qed.
 
 (* We can generalize the previous lemma into *)
-Lemma p_p_q_iff_p_q : (A -> A -> B)  <->  (A -> B).
-Admitted.
-
+Lemma p_p_q_iff_p_q : (A -> A -> B) <-> (A -> B).
+Proof.
+  split.
+  - move=> aa_i_b a.
+    exact: (const aa_i_b a).
+  - move=> a_i_b _.
+    exact: a_i_b.
+Qed.
 
 Lemma p_is_not_equal_not_p :
+  (* ((A -> (A -> False) /\ (A -> False) -> A) -> False) *)
   ~ (A <-> ~ A).
 Proof.
+  (* unfold not. *)
   (* rewrite /not. *)
   case.
   move=> a_i_not_a not_a_i_a.
-Admitted.
+  apply a_i_not_a.
+  apply: not_a_i_a.
+  move=> a.
+  apply a_i_not_a.
+  exact: a.
+  exact: a.
+
+  apply: not_a_i_a.
+  move=> a.
+  apply: a_i_not_a.
+  exact: a.
+  exact: a.
+Qed.
+
+
+Lemma p_is_not_equal_not_p' :
+  (* ((A -> (A -> False) /\ (A -> False) -> A) -> False) *)
+  ~ (A <-> ~ A).
+Proof.
+  (* unfold not. *)
+  (* rewrite /not. *)
+  case.
+  move/p_imp_np_iff_np.
+  move=> not_a not_a_i_a.
+  apply not_a.
+  by apply: not_a_i_a.
+Qed.
 
 Lemma not_not_lem :
   ~ ~ (A \/ ~ A).
 Admitted.
-
 
 Lemma constructiveDNE :
   ~ ~ ~ A  ->  ~ A.
