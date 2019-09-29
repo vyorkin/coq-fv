@@ -62,10 +62,10 @@ Proof.
   (* rewrite /not. *)
   case.
   move=> a_i_not_a not_a_i_a.
-  apply a_i_not_a.
+  apply: (a_i_not_a).
   apply: not_a_i_a.
   move=> a.
-  apply a_i_not_a.
+  apply: (a_i_not_a).
   exact: a.
   exact: a.
 
@@ -86,17 +86,39 @@ Proof.
   case.
   move/p_imp_np_iff_np.
   move=> not_a not_a_i_a.
-  apply not_a.
+  apply: (not_a).
   by apply: not_a_i_a.
 Qed.
 
 Lemma not_not_lem :
   ~ ~ (A \/ ~ A).
-Admitted.
+Proof.
+  rewrite /not.
+  move=> not_lem.
+  apply: (not_lem).
+  left.
+  Undo 1.
+  right.
+  move=> a.
+  apply: not_lem.
+  left.
+  exact: a.
+Qed.
+
+Lemma not_not_lem' :
+  ~ ~ (A \/ ~ A).
+Proof. intuition. Defined.
+Eval compute in not_not_lem'.
 
 Lemma constructiveDNE :
   ~ ~ ~ A  ->  ~ A.
-Admitted.
+Proof.
+  rewrite /not.
+  move=> H a.
+  apply: H.
+  apply.
+  exact: a.
+Qed.
 
 End IntLogic.
 
