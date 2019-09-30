@@ -123,30 +123,99 @@ Qed.
 End IntLogic.
 
 
-
-
 (* Boolean logic (decidable fragment enjoys classical laws) *)
 
 Section BooleanLogic.
 
 Lemma LEM_decidable a :
   a || ~~ a.
-Admitted.
+Proof.
+  (* Используя команду [Set Printing Coercions].
+     можно увидеть, что целью на самом деле является [is_true (a || ~~ a)],
+     где [is_true] определяется как [fun b => b = true] *)
+  Set Printing Coercions.
+  (* [is_true] -- это стандартный способ поднять булево значение
+     на уровень типов, коэрцию Coq вставляет неявно, в зависимости
+     от контекста. Поскольку цель -- это всегда какой-то тип, то
+     Coq понимает, что нужно булево значение преобразовать в тип,
+     используя базу данных коэрций (в которую заранее добавлен [is_true]) *)
+  Unset Printing Coercions.
+  (* Unset Printing Notations. *)
+  (* Search _ (orb _ (negb _)). *)
+  (* Print orbN. *)
+  (* apply orbN. *)
+  (* Set Printing Notations. *)
+
+  (* case a. by []. by []. *)
+  (* case a. done. done. *)
+  by case a.
+Qed.
+
+(* Check erefl. *)
+(* Check (erefl true). *)
 
 Lemma disj_implb a b :
   a || (a ==> b).
-Admitted.
+Proof.
+  by case a.
+  (* case a. *)
+  (* - simpl. done. *)
+  (* simpl. done. *)
+Qed.
 
 Lemma iff_is_if_and_only_if a b :
   (a ==> b) && (b ==> a) = (a == b).
-Admitted.
+Proof.
+  by case a; case b.
+Qed.
 
 Lemma implb_trans : transitive implb.
-Admitted.
+Proof.
+  (* case. case. case. done. done. done. *)
+  (* case. done. done. *)
+
+  by do 2! case.
+  Undo 1.
+  by case; case.
+Qed.
 
 Lemma triple_compb (f : bool -> bool) :
   f \o f \o f =1 f.
-Admitted.
+Proof.
+  (* Unset Printing Notations. *)
+  (* Print eqfun. *)
+  (* Print funcomp. *)
+  (* Set Printing Notations. *)
+
+  (* Это моё глупое решение, следующие два более хитрые и короткие. *)
+
+  case. simpl.
+  - case E1:(f true).
+    + by rewrite E1.
+    + case E2:(f false).
+      * by rewrite E1.
+      * by rewrite E2.
+    + simpl.
+      * case E2:(f false).
+        case E1:(f true).
+        - by rewrite E1.
+        - by rewrite E2.
+      * by rewrite E2.
+
+
+  Restart.
+
+  (* [rewrite !E1] -- Переписать 1 или более раз
+     [rewrite ?E2] -- Переписать 0 или более раз *)
+
+  by case; case E1:(f true)=>/=; case E2:(f false); rewrite ?E1 ?E2. Restart.
+  by case=>/=; case E1:(f true); case E2:(f false); rewrite ?E1 ?E2.
+
+  (* [by t1; t2; ...] выполняет вот эти вот [t1; t2; ...] для каждой подцели.
+     Т.е [by case;] сгенерить первые пару целей, потом следующие два [case]
+     дадут нам ещё несколько случаев. И вот для каждого случая мы
+     переписываем пока переписывается. *)
+Qed.
 
 (* negb \o odd means "even" *)
 Lemma even_add :
@@ -160,6 +229,8 @@ End BooleanLogic.
 
 Section eq_comp.
 Variables A B C D : Type.
+
+(* Search _ involutive. *)
 
 Lemma compA (f : A -> B) (g : B -> C) (h : C -> D) :
   h \o g \o f = h \o (g \o f).
