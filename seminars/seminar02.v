@@ -202,7 +202,6 @@ Proof.
         - by rewrite E2.
       * by rewrite E2.
 
-
   Restart.
 
   (* [rewrite !E1] -- Переписать 1 или более раз
@@ -212,7 +211,7 @@ Proof.
   by case=>/=; case E1:(f true); case E2:(f false); rewrite ?E1 ?E2.
 
   (* [by t1; t2; ...] выполняет вот эти вот [t1; t2; ...] для каждой подцели.
-     Т.е [by case;] сгенерить первые пару целей, потом следующие два [case]
+     Т.е [by case;] сгенерит первые пару целей, потом следующие два [case]
      дадут нам ещё несколько случаев. И вот для каждого случая мы
      переписываем пока переписывается. *)
 Qed.
@@ -220,7 +219,30 @@ Qed.
 (* negb \o odd means "even" *)
 Lemma even_add :
   {morph (negb \o odd) : x y / x + y >-> x == y}.
-Admitted.
+Proof.
+  Unset Printing Notations.
+  (* About morphism_2. Print morphism_2. *)
+  rewrite /morphism_2.
+  Set Printing Notations.
+  (* Прикол в том, чтобы научиться доказывать леммы без
+     использования индукции и предпочитать переписывания.
+     Для этого нужно уметь искать другие леммы, тк
+     oбычно значительная часть времени по доказательству
+     уходит на поиск уже доказанных подходящих лемм,
+     которые можно задействовать/использовать. *)
+  move=> x y/=.
+  Search _ (odd (_ + _)).
+  (* have H: ~~ odd (x + y). rewrite odd_add. *)
+  rewrite [in ~~ odd (x + y)] odd_add.
+  (* Вот такой синтаксис как выше позволяет выплнить
+     переписывание только в указанной часть выражения. *)
+  Search _ (~~ _ == _).
+  rewrite eqb_negLR.
+  Search _ (~~ ~~ _).
+  Search _ involutive.
+  (* rewrite Bool.negb_involutive. *)
+  rewrite negbK.
+Qed.
 
 End BooleanLogic.
 
@@ -229,8 +251,6 @@ End BooleanLogic.
 
 Section eq_comp.
 Variables A B C D : Type.
-
-(* Search _ involutive. *)
 
 Lemma compA (f : A -> B) (g : B -> C) (h : C -> D) :
   h \o g \o f = h \o (g \o f).
