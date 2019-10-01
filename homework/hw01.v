@@ -73,6 +73,9 @@ Fixpoint divn_my (a b : nat) : nat :=
     else O
   else O.
 
+Lemma div_my_n0 : forall x : nat, divn_my x 0 = 0. Proof. by case. Qed.
+Lemma div_my_0n : forall x : nat, divn_my 0 x = 0. Proof. by case. Qed.
+
 (* Unit tests: *)
 Compute divn_my 0 0.  (* = 0 *)
 Compute divn_my 1 0.  (* = 0 *)
@@ -92,8 +95,20 @@ Compute divn 42 4. (* = 10 *)
 
 Theorem div_eq_divn_my :
   forall x y : nat, divn_my x y = divn x y.
-  move=> x y.
-  - Fail by [].
+Proof.
+  case.
+    - by case; rewrite ?div0n ?divn0.
+    - move => x y.
+      elim: y => [| y' IHy'].
+      + by rewrite divn0.
+
+  (* Тут ничего не поможет из того, что мне на данный момент известно.
+     Антон отметил, что для доказательства этой теоремы понадобится
+     сильная индукция (complete induction, course-of-values), которую
+     скорее всего на след. лекции будем рассматривать. *)
+
+  (* div0n  forall d : nat, 0 %/ d = 0 *)
+  (* divn0  forall m : nat, m %/ 0 = 0 *)
 Admitted.
 
 (** 3b. Provide several unit tests using [Compute] vernacular command *)

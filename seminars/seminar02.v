@@ -28,7 +28,11 @@ Lemma contraposition :
   (* (A -> (B -> False)) -> (B -> (A -> False)) *)
   (A -> ~ B) -> (B -> ~ A).
 (* Proof. exact: flip. Qed. *)
-Proof. rewrite /not. Check flip. exact: flip. Qed.
+Proof.
+  rewrite /not.
+  Check flip.
+  exact: flip.
+Qed.
 
 Lemma p_imp_np_iff_np :
   (* Which is equivalent to:
@@ -189,7 +193,9 @@ Proof.
 
   (* Это моё глупое решение, следующие два более хитрые и короткие. *)
 
-  case. simpl.
+  case. simpl. (* [simpl] это не ssreflec'овая тактика, так не делаем :) *)
+  Undo 2.
+  case=>//=. (* а вот так правильно делать, [//=] упрощает цель *)
   - case E1:(f true).
     + by rewrite E1.
     + case E2:(f false).
@@ -214,6 +220,10 @@ Proof.
      Т.е [by case;] сгенерит первые пару целей, потом следующие два [case]
      дадут нам ещё несколько случаев. И вот для каждого случая мы
      переписываем пока переписывается. *)
+
+   (* The [;] tactical applies the tactic on the right side of the
+      semicolon to all the subgoals produced by tactic on the left
+      side. *)
 Qed.
 
 (* negb \o odd means "even" *)
@@ -221,9 +231,11 @@ Lemma even_add :
   {morph (negb \o odd) : x y / x + y >-> x == y}.
 Proof.
   Unset Printing Notations.
-  (* About morphism_2. Print morphism_2. *)
-  rewrite /morphism_2.
   Set Printing Notations.
+  About morphism_2. (* Print morphism_2. *)
+  (* В сущности мы говорим, что можем "продавить" морфизм [f] внутрь аргументов:
+     Definition morphism_2 aOp rOp := forall x y, f (aOp x y) = rOp (f x) (f y). *)
+  rewrite /morphism_2.
   (* Прикол в том, чтобы научиться доказывать леммы без
      использования индукции и предпочитать переписывания.
      Для этого нужно уметь искать другие леммы, тк
@@ -233,6 +245,8 @@ Proof.
   move=> x y/=.
   Search _ (odd (_ + _)).
   (* have H: ~~ odd (x + y). rewrite odd_add. *)
+  (* C [have H] это альтернативный путь, по которому можно пойти.
+     Но можно просто переписывать часть цели/выражения.*)
   rewrite [in ~~ odd (x + y)] odd_add.
   (* Вот такой синтаксис как выше позволяет выплнить
      переписывание только в указанной часть выражения. *)
@@ -241,7 +255,9 @@ Proof.
   Search _ (~~ ~~ _).
   Search _ involutive.
   (* rewrite Bool.negb_involutive. *)
+  Search _ (~~ _ = _).
   rewrite negbK.
+  by rewrite negb_add.
 Qed.
 
 End BooleanLogic.
@@ -254,24 +270,54 @@ Variables A B C D : Type.
 
 Lemma compA (f : A -> B) (g : B -> C) (h : C -> D) :
   h \o g \o f = h \o (g \o f).
-Admitted.
+Proof.
+  done. Undo.
+  Unset Printing Notations.
+  (* Search _ (funcomp _). Print invariant. *)
+  Set Printing Notations.
+  About funcomp.
+  (*     (B -> A) ->     (C -> B) -> C -> A *)
+  (* (g : B -> C) \o (f : A -> B) -> A -> C  *)
+  rewrite /funcomp.
+  done.
+Qed.
 
 Lemma eq_compl (f g : A -> B) (h : B -> C) :
   f =1 g -> h \o f =1 h \o g.
-Admitted.
+Proof.
+  Unset Printing Notations.
+  Set Printing Notations.
+  rewrite /eqfun /funcomp.
+  move=> H a.
+  by rewrite (H a).
+Qed.
 
 Lemma eq_compr (f g : B -> C) (h : A -> B) :
   f =1 g -> f \o h =1 g \o h.
-Admitted.
+Proof.
+  by rewrite /funcomp; move=> H a; rewrite (H (h a)).
+Qed.
 
 Lemma eq_idl (g1 g2 : A -> B) (f : B -> B) :
   f =1 id -> f \o g1 =1 f \o g2 -> g1 =1 g2.
 Proof.
-Admitted.
+  rewrite /funcomp /eqfun.
+  move=> H_id H_eq_comp a.
+  move: (H_eq_comp a); clear H_eq_comp.
+  rewrite (H_id (g1 a)).
+  rewrite (H_id (g2 a)).
+  apply.
+Qed.
 
 Lemma eq_idr (f1 f2 : A -> B) (g : A -> A) :
   g =1 id -> f1 \o g =1 f2 \o g -> f1 =1 f2.
 Proof.
-Admitted.
+  rewrite /funcomp.
+  move=> H_id H_eq_comp a.
+  move: (H_eq_comp a); clear H_eq_comp.
+  (* Когда смотришь на что-то типа [g =1 id]
+     нужно всегда иметь ввиду [foral x : A, g x = x]. *)
+  by rewrite (H_id a).
+Qed.
 
 End eq_comp.

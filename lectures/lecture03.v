@@ -5,9 +5,15 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 Module Lect3.
+  (*** Universal quantifier *)
+
   Section Motivation.
     Variables A B : Type.
 
+    (** Suppose we wrote two functions:
+        a simple (a.k.a. gold) implementation and
+        its optimized version.
+        How do we go about specifying their equivalence? *)
     Variables fgold fopt : A -> B.
 
     Lemma fopt_equiv_fgold :
@@ -16,10 +22,12 @@ Module Lect3.
 
     (* Dependently typed functions *)
 
+    (** ** Dependently typed predecessor function *)
+
     Definition Pred n :=
       if n is S n' then nat else unit.
 
-    (* the value of [unit] type plays the role of a placeholder *)
+    (** the value of [unit] type plays the role of a placeholder *)
     Print unit.
 
     Definition predn_dep : forall n, Pred n :=
