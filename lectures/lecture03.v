@@ -42,12 +42,25 @@ Module Lect3.
     Check erefl : predn_dep 0 = tt.
     Check erefl : Pred 0 = unit.
 
-    (* Annotations for dependent pattern matching *)
+    (** ** Annotations for dependent pattern matching *)
 
-    (* Type inference is undecidable *)
+    (** Type inference is undecidable *)
     Fail Check (fun n => if n is S n' then n' else tt).
 
-    Check (fun n => if n is S n' as n0 return Pred n0 then n' else tt).
+    Check (
+        fun n =>
+          if n is S n' as n0 return Pred n0
+          then n'
+          else tt).
+
+    (**
+    General form of pattern matching construction:
+    [match expr as T in (deptype A B) return exprR].
+
+    - [return exprR] denotes the dependent type of the expression
+    - [as T] is needed when we are matching on complex expressions,
+    not just variables
+    *)
 
     (* Functional type is just a notation *)
     (* for a special case of [forall] *)
@@ -60,10 +73,29 @@ Module Lect3.
 
   End Motivation.
 
+  (** * Usage of [forall] in standalone expressions *)
+
   Section StandardPredicates.
     Variable T : Type.
-    (* ... *)
+    Implicit Types (op add : T -> T -> T).
 
+    Definition associative op :=
+      forall x y z, op x (op y z) = op (op x y) z.
+
+    Definition left_distributive op add :=
+      forall x y z, op (add x y) z = add (op x z) (op y z).
+
+    Definition left_id e op :=
+      forall x, op e x = x.
+
+    (* Вот так надо хотеть^W искать! *)
+    Search _ ((is_true (?m <= ?n)) -> (is_true (?n <= ?p)) -> (is_true (?m <= ?p))).
+    (* А ещё можно искать в конкретном модуле *)
+    Search _ involutive in seq.
+    (* А вот тут [?a], [?b] и [?c] это мета-переменные,
+       т.е. все значения, которые может принимать [?имя] в
+       разных частях шаблона совпадают *)
+    Search _ ((?b - ?a) + ?c = (?b + ?c) - ?a).
   End StandardPredicates.
 
   Definition LEM :=
