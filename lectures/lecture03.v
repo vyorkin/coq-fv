@@ -124,8 +124,9 @@ Module Lect3.
         by move/nq.
         by [].
     case; first by move=> q x; left.
-    move=> all_px.
-    move=> x.
+    move=> all_px x.
+    right. exact: all_px.
+    Undo 2.
     by right.
   Qed.
 
@@ -147,14 +148,25 @@ Module Lect3.
 
     (* Simplified notation *)
 
-    Notation "'exists' x : A , p" :=
-      (ex (fun x : A => p)) (at level 200, right associativity).
+    (** Simplified notation *)
+    Notation "’exists’ x : A , p" :=
+      (ex (fun x : A => p))
+        (at level 200, right associativity).
+
+    (** Full-blown notation: multiple binders *)
+    Notation "'exists' x .. y , p" :=
+      (ex_my (fun x => .. (ex_my (fun y => p)) ..))
+        (at level 200, x binder, right associativity,
+         format "'[' 'exists'  '/  ' x  ..  y ,  '/  ' p ']'")
+      : type_scope.
 
     Print ex_my.
     Print ex.
 
   End MyExistential.
 
+  (* Т.е. если существует [x] для которого утверждение истинно,
+     то не для всех [x] оно не истинно. *)
   Lemma exists_not_forall A (P : A -> Prop) :
     (exists x, P x) -> ~ (forall x, ~ P x).
   Proof.
