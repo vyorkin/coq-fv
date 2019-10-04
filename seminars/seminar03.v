@@ -6,14 +6,21 @@ Unset Printing Implicit Defensive.
 
 Section IntLogic.
 
+(* Вот так надо хотеть^W искать! *)
+Search _ ((is_true (?m <= ?n)) -> (is_true (?n <= ?p)) -> (is_true (?m <= ?p))).
+(* А ещё можно искать в конкретном модуле *)
+Search _ involutive in seq.
+(* А вот тут [?a], [?b] и [?c] это мета-переменные,
+   т.е. все значения, которые может принимать [?имя] в
+   разных частях шаблона совпадают *)
+Search _ ((?b - ?a) + ?c = (?b + ?c) - ?a).
+
+Search cancel in ssrnat.
+
 (* Frobenius rule: existential quantifiers and conjunctions commute *)
 Lemma frobenius A (P : A -> Prop) Q :
   (exists x, Q /\ P x) <-> Q /\ (exists x, P x).
 Proof.
-  split.
-  - case.
-
-
 Qed.
 
 Lemma exist_conj_commute A (P Q : A -> Prop) :

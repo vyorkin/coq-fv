@@ -65,10 +65,20 @@ Module Lect3.
     (* Functional type is just a notation *)
     (* for a special case of [forall] *)
 
+    (*
+       "A -> B" := forall _ : A, B
+       Это зависимая ф-ция, в том случае, когда возвращаемый тип никак не зависит от входного значения.
+       Это нотация из стандартной библиотеки, которая означает:
+       для неважно какого значения из типа [A] мы всегда возвращаем один и тот же тип [B].
+ *)
     Locate "->".
 
+    (* Следующие записи эквивалентны *)
     Check predn : nat -> nat.
+    (* Мы можем назвать как-то входное значение в типе ф-ции, но
+       [Check] распечатает без него, тк в выходном типе оно никак не используется*)
     Check predn : forall _ : nat, nat.
+    (* Аналогично *)
     Check predn : forall x : nat, (fun _ => nat) x.
 
   End Motivation.
@@ -87,16 +97,10 @@ Module Lect3.
 
     Definition left_id e op :=
       forall x, op e x = x.
-
-    (* Вот так надо хотеть^W искать! *)
-    Search _ ((is_true (?m <= ?n)) -> (is_true (?n <= ?p)) -> (is_true (?m <= ?p))).
-    (* А ещё можно искать в конкретном модуле *)
-    Search _ involutive in seq.
-    (* А вот тут [?a], [?b] и [?c] это мета-переменные,
-       т.е. все значения, которые может принимать [?имя] в
-       разных частях шаблона совпадают *)
-    Search _ ((?b - ?a) + ?c = (?b + ?c) - ?a).
   End StandardPredicates.
+
+  (* Закон исключённого третьего влечёт
+     за собой дуальноe правило Фробениуса *)
 
   Definition LEM :=
     forall P : Prop, P \/ ~ P.
@@ -114,15 +118,32 @@ Module Lect3.
     split.
     - move=> all_qpx.
       case: (lem Q).
-      + move=> q. left. exact q.
+      + move=> q.
+        left.
+        exact q.
       + move=> nq.
         right.
         move=> x.
-        (* Check all_qpx x. *)
+        Check all_qpx x.
         case: (all_qpx x).
+        Undo.
+        move: (all_qpx x).
+        case.
         (* Check nq : Q -> False. *)
-        by move/nq.
-        by [].
+        (* конструкция "вид" [move/H] это приблизительный аналог
+           [move=> top. move: (H top)] *)
+        * move/nq.
+          Undo.
+          move=> q. move: (nq q).
+          done.
+        * by [].
+    (* case. *)
+    (* - move => q x. *)
+    (*   left. *)
+    (*   exact: q. *)
+    (* - move => all_qpx x. *)
+    (*   right. *)
+    (*   exact: all_qpx x. *)
     case; first by move=> q x; left.
     move=> all_px x.
     right. exact: all_px.
@@ -130,21 +151,51 @@ Module Lect3.
     by right.
   Qed.
 
+  (* Давайте докажем, что это работает и в обратную сторону *)
+
   Lemma Frobenius2_lem : Frobenius2 -> LEM.
   Proof.
     rewrite /Frobenius2=> frob.
+    rewrite /LEM. Undo.
+    (* Поскольку мы знаем определение [LEM], то
+       мы можем сразу ввести [P] в контекст и
+       Coq развернёт определение автоматически *)
     move=> P.
-    Check (frob P (fun _ => False) P).
     (* rewrite /not. *)
+    Check (frob P (fun _ => False) P).
+    (* frob : forall (A : Type) (P : A -> Prop) (Q : Prop), *)
+    (*        (forall x : A, Q \/ P x) <-> Q \/ (forall x : A, P x) *)
+    (* frob P (fun _ : P => False) P *)
+    (*      : (P -> P \/ False) <-> P \/ (P -> False) *)
     case: (frob P (fun _ => False) P).
+    (* Переносим в контекст первые два, но
+       второе пропускаем и сразу возвращаем первое в цель *)
     move=> H _; move: H.
+    (* [apply.] это "дефективная форма" тактики [apply],
+       что значит по сути "использование тактики без модификаторов" *)
+    apply. move=> x. left. exact: x.
+    Undo 4.
+    (* Т.е. получается, что [left]/[right] переносит
+       всё до первой дизъюнкии в контекст? *)
+    apply. left. exact: x.
+    Undo 3.
     by apply=> p; left.
   Qed.
 
   Module MyExistential.
 
     Inductive ex_my (A : Type) (P : A -> Prop) : Prop :=
+    (* Кодируем introduction rule -- правило ввода следующим образом:
+       конструктор "содержит" 2 значения:
+       некоторый [x : A] и док-во, что [P x] выполняется
+     *)
     | ex_intro (x : A) (proof : P x).
+
+    (* Если у нас написано, что существует [x] для
+       которого выполняется [P x], то мы имеем дело с некой парой.
+       Для того, чтобы воспользоваться этой парой мы должны сделать
+       по ней pattern-matching типа [case x px] и получим в контексте 2 значения.
+       Зависимая типизация тут это ключевая особенность. *)
 
     (* Simplified notation *)
 
@@ -176,34 +227,53 @@ Module Lect3.
     exact: (all x px).
   Qed.
 
+  (* Можно сымитировать обучную пару при помощи exists:
+     A /\ B
+     exists _ : A, B
+  *)
+
   (* Definition curry' {A B C} : *)
   (*   (A * B -> C) -> (A -> B -> C) := *)
   (*   fun f => (fun a b => f (a; b)). *)
 
   Definition curry {A B C} :
     (A * B -> C) -> (A -> B -> C).
+  (* Не будем тут писать слово Proof., тк тут мы
+     имеем ввиду некую вычислительную сущность, а не док-во *)
   move=> f a b.
-  exact: (f (pair a b)).
-  Defined.
+  (* exact: (f (pair a b)). *)
+  exact: (f (a, b)).
+(* Используем Defined, мы хотим уметь
+   считать при помощи этой ф-ции. *)
+ Defined.
 
   Lemma curry_dep A (P : A -> Prop) Q :
-    ((exists x, P x ) -> Q) -> (forall x, P x -> Q).
+    ((exists x, P x) -> Q) -> (forall x, P x -> Q).
   Proof.
     move=> f x px.
+    (* Print ex_intro. *)
+    (* ex_intro : forall x : A, P x -> exists y, P y *)
     exact: (f (ex_intro P x px)).
   Qed.
 
   Section Symmetric_Transitive_Relation.
-
+    (* У нас есть некоторое отношение над типом [D] *)
     Variables (D : Type) (R : D -> D -> Prop).
 
     (* [Hypothesis] is a different syntax for [Variable] *)
+
+    (* отношение симметрично *)
     Hypothesis Rsym :
       forall x y, R x y -> R y x.
 
+    (* отношение транзитивно *)
     Hypothesis Rtrans :
       forall x y z, R x y -> R y z -> R x z.
 
+    (* Если нам известно про некое соотношение,
+       в котором есть хотя бы одна пара (оно не пустое),
+       то такое отношение ещё и рефлексивно, т.е. любой [x]
+       находится в отношении [R] с самим собой. *)
     Lemma relf_if :
       forall x : D, (exists y, R x y) -> R x x.
     Proof.
