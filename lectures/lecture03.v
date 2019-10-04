@@ -329,8 +329,8 @@ Module Lect3.
   *)
   Proof. case. Qed.
 
-  Unset Printing Notations.
-  Print is_true.
+  (* Unset Printing Notations. *)
+  (* Print is_true. *)
 
   (* Coercion is_true : bool >-> Sortclass. *)
   (* Print Coercions. *)
@@ -378,38 +378,91 @@ Module Lect3.
 
   Lemma pair_inj A B (a1 a2 : A) (b1 b2 : B) :
     (a1, b1) = (a2, b2) -> (a1 = a2) /\ (b1 = b2).
-    Proof. case. move=> ->->. by []. Qed.
-    (* Proof. by case=> ->->. Qed. *)
+  Proof.
+    case.
+    move=> H1 H2.
+    rewrite H1.
+    rewrite H2.
+    by [].
+
+    Restart.
+
+    case.
+    move=> ->->.
+    by [].
+
+    Restart.
+
+    by case=> ->->.
+  Qed.
 
     Lemma addnA :
       associative addn.
     Proof.
+      (* Мы знаем определение ассоциативности,
+         поэтому можем сразу переместить x, y и z в контекст и
+         Coq поймёт, что нужно развенуть определение *)
+
+      Eval hnf in associative addn.
+
       move=> x y z.
-      (* elim: x=> //. *)
-      (* elim: x. *)
-      (* have : 0 + 1 = 1. *)
+      (* Есть такая эвристика, что если ф-ция определена рекурсивно по
+         1-му аргументу, то идукцию сдедует тоже делать по 1-му аргументу.
+
+         Индукция это некоторое символическое вычисление. *)
+
+      elim: x.
+      - by [].
+
+      (* Мы хотим избавляться от таких тривиальных целей,
+         как в первом случае. Это можно сделать при помощи
+         флага [//], который делает тоже самое, что и [by []]. *)
+      Undo 3.
+
+      elim: x=> //.
+      Undo 1.
+
+      elim: x.
+      have : 0 + 1 = 1.
+
+      Print addn.
+      (* Модификатор [/=] запускает классическую тактику [simpl],
+         которая двойные определения не разворачивает:
+         [addn = nosimpl addn_rec] *)
+
       (* Set Printing All. *)
       (* rewrite /addn. *)
+      move=> /=.
+      (* Unset Printing All. *)
+      done.
+
+      Restart.
+
+      move=> x y z.
       elim: x=> // x IH.
       Search _ (_.+1 + _).
       rewrite addSn.
       rewrite IH.
       done.
-    Qed.
 
-    Lemma addnA' :
-      associative addn.
-    Proof.
+      Restart.
+
       by move=> x y z; elim: x=> // x IH; rewrite addSn IH.
     Qed.
 
     Lemma add0n :
       left_id 0 addn.
-    Proof. by []. Qed.
+    Proof.
+      (* Это просто вычисляется (по определению суммы [add_n]) *)
+      rewrite /left_id.
+      by [].
+    Qed.
 
     Lemma addn0 :
       right_id 0 addn.
     Proof.
+      rewrite /right_id.
+      (* А вот тут уже только по индукции *)
       by elim=> // x IH; rewrite addSn IH.
     Qed.
 
