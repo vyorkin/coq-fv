@@ -36,8 +36,13 @@ Proof.
   (*   rewrite fact0. *)
   (*   rewrite mul1n. *)
   (*   by []. *)
-  (* - move=> n. *)
-  (*     by []. *)
+  (* - move=> n IHn. *)
+  (*   About factS. *)
+  (*   rewrite factS. *)
+  (*   rewrite -IHn. *)
+  (*   About mulnCA. *)
+  (*   Print mulnA. *)
+
   elim: n k=> [|n IHn] k; first by rewrite fact0 mul1n.
   by rewrite factS /= IHn mulnCA mulnA.
 Qed.
@@ -165,8 +170,11 @@ Qed.
 Lemma fib_iter_correct n :
   fib_iter n 0 1 = fib n.
 Proof.
-elim/nat_ind2: n=> // n IHn0 IHn1.
-by rewrite fib_iter_sum /= -IHn0 -IHn1 addnC.
+  elim/nat_ind2: n=> // n IHn0 IHn1.
+  by rewrite fib_iter_sum /= -IHn0 -IHn1 addnC.
+  Undo 2.
+  elim/nat_ind2: n=> // n IHn0 IHn1.
+  by rewrite fib_iter_sum IHn0 IHn1.
 Qed.
 (** Note: fib_iter_correct can be proven using
     suffices:
@@ -177,19 +185,27 @@ Qed.
 
 (** * Another way is to provide a spec for fib_iter *)
 
+From Coq Require Import Omega.
+From Coq Require Import Psatz.
+
 Lemma fib_iter_spec n f0 f1 :
+  (* Основная сложность тут это догадаться до
+     формулировки леммы, док-во тивиально *)
   fib_iter n.+1 f0 f1 = f0 * fib n + f1 * fib n.+1.
 Proof.
-elim: n f0 f1=> [|n IHn] f0 f1; first by rewrite muln0 muln1.
-by rewrite fib_iterS IHn /= mulnDr mulnDl addnCA.
+  elim: n f0 f1=> [|n IHn] f0 f1; first by rewrite muln0 muln1.
+  by rewrite fib_iterS IHn /= mulnDr mulnDl addnCA.
+
+  (* Это можно доказать тактиками:
+     lia - линейная челочисленная арифметика
+     omega - арифметика Пресбургера (заточена на работу с операторами из ванильного Coq ) *)
 Qed.
 
 Lemma fib_iter_correct' n :
   fib_iter n 0 1 = fib n.
 Proof.
-by case: n=> // n; rewrite fib_iter_spec mul0n mul1n.
+  by case: n=> // n; rewrite fib_iter_spec mul0n mul1n.
 Qed.
-
 
 
 (** * Yet another solutiton *)
@@ -198,16 +214,16 @@ Qed.
 Lemma fib_iter_spec' n p :
   fib_iter n (fib p) (fib p.+1) = fib (p + n).
 Proof.
-elim: n p=> [|n IHn] p; first by rewrite addn0.
-by rewrite fib_iterS IHn addnS.
+  elim: n p=> [|n IHn] p; first by rewrite addn0.
+  by rewrite fib_iterS IHn addnS.
 Qed.
 
 Lemma fib_iter_correct'' n :
   fib_iter n 0 1 = fib n.
 Proof.
-Fail apply: fib_iter_spec'.
-suffices: (fib_iter n (fib 0) (fib 1) = fib n) by [].
-by apply: fib_iter_spec'.
+  Fail apply: fib_iter_spec'.
+  suffices: (fib_iter n (fib 0) (fib 1) = fib n) by [].
+  by apply: fib_iter_spec'.
 Qed.
 
 
@@ -225,7 +241,8 @@ Lemma lt_wf_ind (P : nat -> Prop) :
   (forall m, (forall k : nat, (k < m) -> P k) -> P m) ->
   forall n, P n.
 Proof.
-  (* exercise! *)
+  (* move=> m n. *)
+  (* Search _ (_ < _ ). *)
 Admitted.
 
 
