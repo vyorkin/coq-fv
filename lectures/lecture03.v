@@ -176,10 +176,11 @@ Module Lect3.
     apply. move=> x. left. exact: x.
     Undo 4.
     (* Т.е. получается, что [left]/[right] переносит
-       всё до первой дизъюнкии в контекст? *)
+       всё до первой дизъюнкии в контекст? Да.
+       Это плохо. Способ выше -- правильный *)
     apply. left. exact: x.
     Undo 3.
-    by apply=> p; left.
+    by apply; left.
   Qed.
 
   Module MyExistential.
@@ -243,7 +244,9 @@ Module Lect3.
   move=> f a b.
   (* exact: (f (pair a b)). *)
   exact: (f (a, b)).
-(* Используем Defined, мы хотим уметь
+(* Используем Defined, мы хотим уметьle n = 3 * n
+  ============================
+  (triple n).+
    считать при помощи этой ф-ции. *)
  Defined.
 
@@ -279,8 +282,8 @@ Module Lect3.
     Proof.
       move=> x.
       case=> y rxy.
-      move: (Rsym rxy); move: rxy.
-      by apply: Rtrans.
+      move: (Rsym rxy). move: rxy.
+      apply: Rtrans.
     Qed.
 
   End Symmetric_Transitive_Relation.
@@ -295,29 +298,69 @@ Module Lect3.
 
   Lemma False_implies_false :
     False -> false.
-  (* Set Printing Coercions. *)
+  (* Check false : Type. *)
+  (* Print false. *)
+  Set Printing Coercions.
   (* Set Printing All. *)
   rewrite /is_true.
+  (* Теперь мы видим, что на самом деле от нас требуется доказать, что:
+     False -> false = true
+
+     Мы тут видим [false = true], потому что
+     is_true = fun b : bool => eq b true : forall _ : bool, Prop
+
+     Вообще говоря, у нас это не тайпчекается,
+     потому что здесь должен быть тип.
+
+     Коэрции это такой способ реализовать в Coq подтипирование.
+     Поскольку в теории типов, на которой основан Coq подтипирования нет, то
+     это реализовано при помощи такого метамеханизма.
+     Как только Coq видит, что есть некий терм, который
+     не проходит проверку типов (у нас это [false = true]), то
+     он ищет в своей базе коэрций способ преобразовать его так,
+     чтобы он тайпчекался. В нашем случае наиболее простой выход,
+     который он находит это использовать [is_true].
+
+     False -> is_true false
+
+     forall _ : False, @eq bool false true
+
+     Вот так, например, определена коэрция [is_true]:
+  *)
   Proof. case. Qed.
 
-  (* Unset Printing Notations. *)
+  Unset Printing Notations.
   Print is_true.
-  (* Coercion is_true : bool -> Sortclass. *)
 
+  (* Coercion is_true : bool >-> Sortclass. *)
+  (* Print Coercions. *)
+
+  (* Going in the other direction *)
   Lemma false_implies_False :
     false -> False.
   Proof. by []. Qed.
 
   Check I : True.
 
+  (* What's going on here? Let's write a proof term *)
   Definition false_implies_False_term :
     false -> False :=
     fun eq : false =>
+      (* [in] это по сути [:],
+         т.е. это нужно читать как [eq : eq _ b]*)
       match eq in (_ = b)
             return (if b then False else True)
       with
-      | erefl => I
+      | erefl => I : True
       end.
+
+  (* Все параметры индуктивного типа заменяются на _,
+     а всем индексам можно дать имена
+   *)
+
+  (* fun     eq : false = true => *)
+  (*   match eq : (_    = b) *)
+
 
   (* Injectivity of constructors *)
 
@@ -325,6 +368,10 @@ Module Lect3.
     S n = S m -> n = m.
   Proof.
     case. (* special case for [case] *)
+    (* Тактика [case] работает специальным образом в таком случае.
+       Если мы на таком равенстве с конструкторами используем её, то
+       она нам преобразует в соотв. форму -- "распаковывает" конструкторы.
+     *)
     Show Proof.
     done.
   Qed.

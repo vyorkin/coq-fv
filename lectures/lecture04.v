@@ -7,7 +7,7 @@ Unset Printing Implicit Defensive.
 
 (** * Generalizing Induction Hypothesis *)
 
-(* Идукция это рекурсия в рамках теории типов *)
+(* Индукция это рекурсия в рамках теории типов *)
 
 (** The standard (non-tail-recursive) factorial function *)
 Locate "`!".

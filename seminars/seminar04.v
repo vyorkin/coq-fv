@@ -15,12 +15,44 @@ Fixpoint triple (n : nat) : nat :=
 Lemma triple_mul3 n :
   triple n = 3 * n.
 Proof.
-Admitted.
+  elim: n.
+  - by [].
+  - move=> n IHn //=.
+    rewrite IHn.
+    About mulnS.
+    rewrite mulnS.
+    move=>//=.
+    Undo.
+    done.
+
+  Restart.
+
+  by elim: n => //= n IHn; rewrite IHn mulnS.
+
+  (* Eval hnf in left_commutative muln. *)
+Qed.
 
 Lemma double_inj m n :
   m + m = n + n -> m = n.
 Proof.
-Admitted.
+  (* Search _ "inj" in ssrnat. TODO *)
+
+  elim: m.
+  by case: n.
+  move=> m.
+  case: n.
+  - by [].
+
+  Restart.
+
+  move: n.
+  elim: m.
+  - by case.
+  move=> n IHn n0.
+  rewrite addSn.
+  Search _ "mul".
+  Eval hnf in left_commutative muln.
+Qed.
 
 
 (** Write a tail-recursive variation of the [addn] function

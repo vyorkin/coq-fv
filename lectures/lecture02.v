@@ -197,13 +197,12 @@ Module Lect2.
        it is allowed to vary between different constructors of the inductive type.
        --
        Similar to GADT *)
-    Inductive eq (A : Type) (a : A) :
-      A -> Prop :=
+    Inductive eq (A : Type) (a : A) : A -> Prop :=
     | eq_refl : eq a a.
  (* | eq_refl1 b : eq b b. -- invalid *)
  (* | eq_refl2 b : eq a b. -- correct *)
 
-    (* Типы это утверждения *)
+    (* Типы  это утверждения *)
     (* Термы это доказательства *)
 
     About eq.
@@ -213,13 +212,15 @@ Module Lect2.
     Короче смотри, если ты такой же тупой как я и
     ты не понял всё, что написано выше, то вот как это понимаю я:
 
-    У нас есть тип [eq], он
-    - параметризован некоторым [a : A] и
+    У нас есть тип [eq (A : Type) (a : A) : A -> Prop], он
+    - параметризован некоторым типом (A : Type)
+    - значением этого типа [a : A] и
     - индексирован некоторым [A] (стоит справа от ":")
+
     Так вот, типов таких существует дофига, например:
-    - eq nat 1 1.
-    - eq nat 3 2.
-    - eq nat 9 4.
+    - @eq nat 1 1.
+    - @eq nat 3 2.
+    - @eq nat 9 4.
 
     Но вот сконструировать жителей последних двух
     типов у тебя не получится. Чтобы понять почему --
@@ -232,6 +233,13 @@ Module Lect2.
     Это похоже на хаскельные GADTs.
     *)
 
+    (* Например, вот такой тип есть *)
+    Check @eq bool false true.
+    (* Но жителя этого типа создать нельзя, тк
+       [eq_refl false] это конструктор типа [@eq bool false false]. *)
+    Fail Check eq_refl false : @eq bool false true.
+
+    (* Аналогично и здесь *)
     Check @eq nat 1 1.
     Check eq_refl 1 : @eq nat 1 1.
     Check eq_refl 2 : eq 2 2.
