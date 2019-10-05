@@ -228,7 +228,7 @@ Module Lect3.
     exact: (all x px).
   Qed.
 
-  (* Можно сымитировать обучную пару при помощи exists:
+  (* Можно имитировать обучную пару при помощи exists:
      A /\ B
      exists _ : A, B
   *)
@@ -244,10 +244,7 @@ Module Lect3.
   move=> f a b.
   (* exact: (f (pair a b)). *)
   exact: (f (a, b)).
-(* Используем Defined, мы хотим уметьle n = 3 * n
-  ============================
-  (triple n).+
-   считать при помощи этой ф-ции. *)
+  (* Используем Defined, тк мы хотим уметь считать при помощи этой ф-ции. *)
  Defined.
 
   Lemma curry_dep A (P : A -> Prop) Q :
@@ -313,11 +310,11 @@ Module Lect3.
      потому что здесь должен быть тип.
 
      Коэрции это такой способ реализовать в Coq подтипирование.
-     Поскольку в теории типов, на которой основан Coq подтипирования нет, то
-     это реализовано при помощи такого метамеханизма.
+     Поскольку в теории типов, на которой основан Coq подтипирования нет,
+     то это реализовано при помощи такого мета-механизма.
      Как только Coq видит, что есть некий терм, который
-     не проходит проверку типов (у нас это [false = true]), то
-     он ищет в своей базе коэрций способ преобразовать его так,
+     не проходит проверку типов (у нас это [false = true]),
+     то он ищет в своей базе коэрций способ преобразовать его так,
      чтобы он тайпчекался. В нашем случае наиболее простой выход,
      который он находит это использовать [is_true].
 
@@ -354,9 +351,15 @@ Module Lect3.
       | erefl => I : True
       end.
 
+  (* See:
+     https://coq.inria.fr/refman/addendum/extended-pattern-matching.html#dependent-pattern-matching
+     https://github.com/coq/coq/wiki/MatchAsInReturn.
+
+     [match] allows the result type to depend on both
+     the input value, and the parameters of the input type. *)
+
   (* Все параметры индуктивного типа заменяются на _,
-     а всем индексам можно дать имена
-   *)
+     а всем индексам можно дать имена *)
 
   (* fun     eq : false = true => *)
   (*   match eq : (_    = b) *)
@@ -463,28 +466,63 @@ Module Lect3.
     Proof.
       rewrite /right_id.
       (* А вот тут уже только по индукции *)
+
+      elim.
+      - by [].
+      - move=> n IHn.
+        About addSn.
+        rewrite addSn.
+        rewrite IHn.
+        done.
+
+      Restart.
+
+      move=> x.
+      elim: x=> // x IHn.
+
+      Restart.
+
       by elim=> // x IH; rewrite addSn IH.
     Qed.
 
     Lemma addSnnS m n :
       m.+1 + n = m + n.+1.
-    (* Proof. by elim: m=> // m IH; rewrite addSn IH. Qed. *)
     Proof.
       elim: m=> //.
       move=> m IH.
       rewrite addSn IH.
       done.
+
+      Restart.
+
+      by elim: m=> // m IH; rewrite addSn IH.
     Qed.
 
     Lemma addnC :
       commutative addn.
     Proof.
       move=> x y.
+      elim: x.
+      - rewrite addn0. done.
+      - move=> n IHn.
+        rewrite addSn.
+        rewrite -addSnnS.
+        rewrite IHn.
+        rewrite addSn.
+        done.
+
+      Restart.
+
+      move=> x y.
       elim: x; first by rewrite addn0.
       by move=> x IHn; rewrite addSn IHn -addSnnS.
     Qed.
 
     Check nat_ind.
+
+    (* Определим элиминатор индукции.
+       В теории типов индукция кодируется через рекурсию,
+       т.е. у нас нет отдельно рекурсии и отдельно индукции. *)
 
     Definition nat_ind_my :
       forall P : nat -> Prop,

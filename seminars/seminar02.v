@@ -193,7 +193,7 @@ Proof.
 
   (* Это моё глупое решение, следующие два более хитрые и короткие. *)
 
-  case. simpl. (* [simpl] это не ssreflec'овая тактика, так не делаем :) *)
+  case. simpl. (* [simpl] это не ssreflec'овая тактика, так больше не делаем :) *)
   Undo 2.
   case=>//=. (* а вот так правильно делать, [//=] упрощает цель *)
   - case E1:(f true).
@@ -201,7 +201,7 @@ Proof.
     + case E2:(f false).
       * by rewrite E1.
       * by rewrite E2.
-    + simpl.
+    + move=>//=.
       * case E2:(f false).
         case E1:(f true).
         - by rewrite E1.

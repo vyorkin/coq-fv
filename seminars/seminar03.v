@@ -21,18 +21,42 @@ Search cancel in ssrnat.
 Lemma frobenius A (P : A -> Prop) Q :
   (exists x, Q /\ P x) <-> Q /\ (exists x, P x).
 Proof.
+  split.
+  - case=> x qpx.
+    + case: qpx.
+      move=> q px.
+      split.
+      * exact: q.
+      * exact: ex_intro P x px.
+    + case=> q evx.
+      * move: evx.
+      * case=> x px.
+        (* Есть тактика refine, ей можно скормить
+           неполный терм с подчёркиваниями, после чего она
+           предложит доказать всё недостающее *)
+        refine (ex_intro _ _ (conj _ _)).
+        Undo.
+        Unset Printing Notations.
+        (* Вот так можно посмотреть какой ожидаетcя вместо [P] *)
+        Fail refine (ex_intro P _ _).
+        Set Printing Notations.
+        exact: ex_intro ((fun x : A => Q /\ (P x))) x (conj q px).
 Qed.
 
 Lemma exist_conj_commute A (P Q : A -> Prop) :
   (exists x, P x /\ Q x) -> (exists x, P x) /\ (exists x, Q x).
 Proof.
-Admitted.
+  case=> x [px qx].
+  - split.
+    + exact: ex_intro P x px.
+    exact: ex_intro Q x qx.
+Qed.
 
 Lemma conj_exist_does_not_commute :
   ~ (forall A (P Q : A -> Prop),
        (exists x, P x) /\ (exists x, Q x) -> (exists x, P x /\ Q x)).
 Proof.
-Admitted.
+Qed.
 
 (* helper lemma *)
 Lemma curry_dep A (P : A -> Prop) Q :
