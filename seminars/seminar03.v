@@ -144,6 +144,8 @@ Proof.
 
   case: (H bool id).
 
+  (* ... *)
+
 Abort.
 
 End IntLogic.
@@ -162,7 +164,11 @@ Fixpoint mostowski_equiv (a : bool) (n : nat) :=
 Lemma mostowski_equiv_even_odd a n :
   mostowski_equiv a n = a || odd n.
 Proof.
-Admitted.
+  elim: n=> [|n IHn] /=.
+  - by rewrite Bool.orb_false_r.
+  rewrite IHn. clear IHn.
+  by case: a=> //=; rewrite eqbF_neg.
+Qed.
 
 End BooleanLogic.
 
