@@ -47,22 +47,80 @@ Lemma exist_conj_commute A (P Q : A -> Prop) :
   (exists x, P x /\ Q x) -> (exists x, P x) /\ (exists x, Q x).
 Proof.
   case=> x [px qx].
-  - split.
-    + exact: ex_intro P x px.
-    exact: ex_intro Q x qx.
+  split.
+  - exact: ex_intro P x px.
+  exact: ex_intro Q x qx.
 Qed.
 
 Lemma conj_exist_does_not_commute :
   ~ (forall A (P Q : A -> Prop),
-       (exists x, P x) /\ (exists x, Q x) -> (exists x, P x /\ Q x)).
+        (exists x, P x) /\ (exists x, Q x) -> (exists x, P x /\ Q x)).
 Proof.
+  (* Нужно найти контр-пример, т.е. такой
+     тип [A] и два предиката над ним, что получится доказать
+     (exists x, P x) /\ (exists x, Q x), но при этом из
+     (exists x, P x /\ Q x) получается противоречие.
+
+     Другими словами:
+
+     Нам нужны два "взаимнообратных" предиката, так чтобы по
+     отдельности они были доказуемы на каких-то значениях, а
+     вместе -- ни для одного значения.
+      *)
+
+  About ex_intro.
+
+  (* ex_intro: forall (A : Type) (P : A -> Prop) (x : A), P x -> exists y, P y
+     где [Argument A is implicit]
+
+     т.е. смотрим только на следующее:
+
+     ex_intro:
+       (P : A -> Prop)  -- предикат
+       (x : A),         -- значение
+       P x              -- доказательство, что предикат выполняется на этом значении *)
+
+  Check (ex_intro id).
+  (* forall x : Prop, x -> exists x0 : Prop, x0
+
+     Сформулируем на естественном языке. Это значит буквально:
+     Для любого утверждения [x] предикат [id] выполняется только в случае,
+     если это утверждение истинно.
+  *)
+
+  Check (ex_intro not).
+
+  (* forall (x : Prop), ~ x -> exists y, ~ y *)
+  (* forall (x : Prop) (_ : not x), ex not *)
+
+  (* Аналогично, на ест. яз. это звучит как:
+     Для любого утверждения [x] предикат [not x] истинен,
+     если [x] ложь. *)
+
+  move=> H.
+  case: (H bool id not).
+  - split.
+    + exact: (ex_intro is_true true).
+    + exact: (ex_intro (not \o is_true) false).
+  by move=> b; case.
 Qed.
 
 (* helper lemma *)
+
+(* Наличие импликации следующей формулировки
+   "Если существет такой [x], для которого [P x] истинно, то выполняется [Q]"
+   Влечёт за собой наличие импликации вида
+   "Если для любого [x] выполняется [P x], то [Q] истина"
+
+   Интиутивно понятно, что второе утверждение слабее первого, т.к.
+   нам достаточно, чтобы утверждение [P] выполнялось хотя бы для одного [x].
+*)
 Lemma curry_dep A (P : A -> Prop) Q :
   ((exists x, P x) -> Q) -> (forall x, P x -> Q).
 Proof. move=> f x px. exact: (f (ex_intro _ x px)). Qed.
 
+(* Если не для всех [x] утверждение [P x] не истинно,
+   то существует такой [x], для которого оно истинно. *)
 Definition not_forall_exists :=
   forall A (P : A -> Prop),
     ~ (forall x, ~ P x) -> (exists x, P x).
@@ -70,13 +128,25 @@ Definition not_forall_exists :=
 (* Double negation elimination *)
 Definition DNE := forall (P : Prop), ~ ~ P -> P.
 
+(* Нужно доказать эквивалетность леммы о
+   двойном отрицании и вот этой вот леммы выше. *)
 Lemma not_for_all_is_exists_iff_dne :
   not_forall_exists <-> DNE.
-roof.
-Admitted.
+Proof.
+  rewrite /not_forall_exists /DNE.
+  split.
+  (* rewrite /not. *)
+  move=> H.
+  (* Если присмотреться к форме [H], то видно, что там в
+     некотором роде происходит снятие двойного отрицания:
+     в предпосылку ~ (forall x : A, ~ P x) входят два отрицания,
+     а в заключении (exists x : A, P x) их уже нет. *)
+
+  case: (H bool id).
+
+Abort.
 
 End IntLogic.
-
 
 
 Section BooleanLogic.

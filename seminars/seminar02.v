@@ -101,7 +101,9 @@ Proof.
   move=> not_lem.
   apply: (not_lem).
   left.
+
   Undo 1.
+
   right.
   move=> a.
   apply: not_lem.
@@ -115,7 +117,7 @@ Proof. intuition. Defined.
 Eval compute in not_not_lem'.
 
 Lemma constructiveDNE :
-  ~ ~ ~ A  ->  ~ A.
+  ~ ~ ~ A -> ~ A.
 Proof.
   rewrite /not.
   move=> H a.
