@@ -130,8 +130,11 @@ Module Lect3.
         move: (all_qpx x).
         case.
         (* Check nq : Q -> False. *)
-        (* конструкция "вид" [move/H] это приблизительный аналог
-           [move=> top. move: (H top)] *)
+        (* Конструкция "вид" [move/H] это приблизительный аналог
+           [move=> top. move: (H top)]
+
+           Соотвественно это работает и с [case/H],
+           что будет эквивалентно [move=> top. case: (H top)] *)
         * move/nq.
           Undo.
           move=> q. move: (nq q).
