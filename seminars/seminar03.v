@@ -222,7 +222,89 @@ Section Arithmetics.
 
 Lemma addnCB m n : m + (n - m) = m - n + n.
 Proof.
-Admitted.
+  (* Было бы неплохо как-то элиминировать [m].
+     Для этого нужно для начала раскрыть скобки. *)
+
+  (*           m + (n - m) = m - n + n *)
+  (* m <= n -> m + (n - m) = m + n - m *)
+  rewrite addnBA.
+  rewrite addKn.
+
+  (* Search _ (?a + ?b - ?b = ?a). *)
+  (* Так не получится.
+     Найти нужную лемму можно вот так: *)
+  (* Search _ cancel addn subn. *)
+
+  (* Как же догадаться поискать такое?
+     Существует такая штука, как [cancel]:
+
+     fun (rT aT : Type) (f : aT -> rT) (g : rT -> aT) =>
+       forall x : aT, g (f x) = x
+
+     Т.е. ф-ция [g] нейтрализует [f] *)
+  (* Print cancel. *)
+
+  (* About addKn. Eval hnf in cancel (addn n) (subn^~ n). *)
+  (* n + x - n = x *)
+  (* About addnK. Eval hnf in cancel (addn^~ n) (subn^~ n). *)
+
+  (* apply: eqP. *)
+  (* Eval hnf in self_inverse 0 subn. *)
+
+  (* addn_eq0   forall m n   : nat, (m + n == 0) = (m == 0) && (n == 0) *)
+  (* eqn_add2l  forall p m n : nat, (p + m == p + n) = (m == n) *)
+  (* eqn_add2r  forall p m n : nat, (m + p == n + p) = (m == n) *)
+
+  (* Search _ addn _ in ssrnat. *)
+  (* Search _ subn _ in ssrnat. *)
+
+  (* About addnC. *)
+  (* Eval hnf in commutative addn. *)
+  (* rewrite [in _ - n + n] addnC. *)
+
+  (* About subnn. *)
+  (* Eval hnf in self_inverse 0 subn. *)
+  (* About addn0. *)
+  (* Eval hnf in right_id 0 addn. *)
+  (* About add0n. *)
+  (* Eval hnf in left_id 0 addn. *)
+
+  (* rewrite [in _ - _] subnn. *)
+
+  Restart.
+
+  (* В общем, фиг его знает. *)
+  (* Попробуем поискать что-то типа. *)
+
+  Search _ (?m + (?n - ?m)) in ssrnat.
+  (* Находятся 2 леммы: *)
+  (* subnKC  forall m n : nat, m <= n -> m + (n - m) = n *)
+  (* ^^ подобным путём мы уже ходили -- он никуда не приводит,
+     тк доказать m <= n в не получится.*)
+  (* maxnE   forall m n : nat, maxn m n = m + (n - m) *)
+  (* ^^ А вот это можно и попробовать. *)
+  rewrite -maxnE.
+
+  (* Если посмотреть внутрь [rewrite /maxn.], то
+     можно увидеть как это будет работать на натуральных числах:
+
+     (if 2 < 3 then 3 else 2) = 2 - 3 + 3 <=>
+                  3         =   0     + 3 <=>
+                  3         =           3
+  *)
+
+  (* Поищем что у нас ещё есть про "maxn" подходящего для док-ва:
+     maxn m n = m - n + n
+  *)
+  Search _ "maxn" in ssrnat.
+  (* maxnE  forall m n : nat, maxn m n = m + (n - m) *)
+  (* maxnC  commutative maxn *)
+  Eval hnf in commutative maxn.
+
+  rewrite maxnC.
+  rewrite maxnE.
+  rewrite addnC.
+Qed.
 
 Lemma addnBC m n : n - m + m = m - n + n.
 Proof.
