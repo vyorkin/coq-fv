@@ -13,7 +13,7 @@ Variable DNE : forall A : Prop, ~ ~ A -> A.
 Lemma drinker_paradox (P : nat -> Prop) :
   exists x, P x -> forall y, P y.
 Proof.
-Admitted.
+Qed.
 
 (* This closes the section, discharging over DNE *)
 End Classical_reasoning.

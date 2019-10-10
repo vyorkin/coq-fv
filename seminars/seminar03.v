@@ -273,16 +273,18 @@ Proof.
 
   Restart.
 
-  (* В общем, фиг его знает. *)
+  (* В общем, фиг его знает, этим путём не пройти. *)
   (* Попробуем поискать что-то типа. *)
 
   Search _ (?m + (?n - ?m)) in ssrnat.
-  (* Находятся 2 леммы: *)
-  (* subnKC  forall m n : nat, m <= n -> m + (n - m) = n *)
-  (* ^^ подобным путём мы уже ходили -- он никуда не приводит,
-     тк доказать m <= n в не получится.*)
-  (* maxnE   forall m n : nat, maxn m n = m + (n - m) *)
-  (* ^^ А вот это можно и попробовать. *)
+  (* Находятся 2 леммы:
+
+     subnKC forall m n : nat, m <= n -> m + (n - m) = n
+     ^^ подобным путём мы уже ходили -- он никуда не приводит,
+     тк доказать m <= n в не получится.
+
+     maxnE  forall m n : nat, maxn m n = m + (n - m)
+     ^^ А вот это можно и попробовать. *)
   rewrite -maxnE.
 
   (* Если посмотреть внутрь [rewrite /maxn.], то
@@ -304,47 +306,186 @@ Proof.
   rewrite maxnC.
   rewrite maxnE.
   rewrite addnC.
+  done.
 Qed.
 
 Lemma addnBC m n : n - m + m = m - n + n.
-Proof.
-Admitted.
+Proof. by rewrite addnC addnCB. Qed.
 
 Lemma addnBC' : commutative (fun m n => m - n + n).
 Proof.
-Admitted.
+  (* Eval hnf in commutative (fun m n => m - n + n). *)
+  (* forall x y : nat, x - y + y = y - x + x *)
+  (* rewrite /commutative. *)
+  move=> m n.
+  by rewrite addnBC.
+Qed.
 
 Lemma example_for_rewrite_patterns m n :
   m * n + m * n + m * n + n * m
   =
   m * n + m * n + m * n + n * m.
 Proof.
-(*
+  (*
   Parenthesized goal:
-         X
+          X
   /--------------\
   ((m * n + m * n) + m * n) + n * m
   =
   ((m * n + m * n) + m * n) + n * m
-    \___________/
-         X
-*)
-rewrite [in X in X + _ + _]mulnC.
-done.
+      \___________/
+          X
+  *)
+  (* About mulnC. *)
+  (* Eval hnf in commutative muln. *)
+  (* x * y = y * x *)
+
+  (* Вот так мы фокусируемся на
+     переписывани "подвыражения подвыражения" *)
+  rewrite [in X in X + _ + _]mulnC.
+  done.
 Abort.
 
 Lemma subn_sqr m n : m ^ 2 - n ^ 2 = (m - n) * (m + n).
 Proof.
-Admitted.
+  (* Начнём максимально наивно --
+     попробуем поискать подходящие леммы по наибольшим запросам/шаблонам. *)
+  Search _ (?m ^ 2 - ?n ^ 2).
+  Search _ ((?m - ?n) * _).
+  Search _ (_ * (?m + ?n)).
+  (* Только наша лемма, ничего больше.
+     Что у нас есть из менее общего (по мере уменьшения уникальности и общности)?
+     - возведение в квадрат
+     - возведение в степень
+     - умножение
+     - вычитание *)
+  Search _ (?m ^ 2).
+  Search _ (?m ^ ?n).
+  (* Что-то нашли. Полезным пока кажется только [mulnn].
+     А ещё у нас есть скобки, и нам нужно их раскрыть. *)
+  Search _ (muln (?m _ ?n) _).
+  Search _ "muln" in ssrnat.
+  (* Cледующие несколько лемм выглядят полезными: *)
+
+  (* mulnDl left_distributive muln addn *)
+  (* Eval hnf in left_distributive muln addn. *)
+  (* (x + y) * z = x * z + y * z *)
+
+  (* mulnDr right_distributive muln addn *)
+  (* Eval hnf in right_distributive muln addn. *)
+  (* x * (y + z) = x * y + x * z *)
+
+  (* mulnBl left_distributive muln subn *)
+  (* Eval hnf in left_distributive muln subn. *)
+  (* (x - y) * z = x * z - y * z *)
+
+  (* mulnBr right_distributive muln subn *)
+  (* Eval hnf in right_distributive muln subn.  *)
+  (* x * (y - z) = x * y - x * z *)
+
+  (* Начнём раскрывать скобки: *)
+  rewrite mulnDr.
+  do 2! rewrite mulnBl.
+  do 2! rewrite mulnn.
+  (* Приведём вхождения [n * m] & [m * n] к одному виду *)
+  rewrite [in n * m]mulnC.
+  (* Нужно раскрыть скобки и избавиться от [m * n] *)
+
+  Search _ (_ + (_ - _)).
+  (* addnCB forall m n : nat, m             + (n     - m)     = m - n + n *)
+  (*                          m ^ 2 - m * n + (m * n - n ^ 2) *)
+  (* Нет, это не то, попробуем поискать что ещё можно сделать.
+
+     У нас
+     m ^ 2 - m * n + (m * n - n ^ 2)
+     это по сути вот такое выражение:
+     x - y + (y - z)
+  *)
+  Search _ (?x - ?y + (?y - ?z)).
+  Search _ ( _ - _  + (_ - _)).
+  Search _ ((_ - _) +  _ - _).
+  (* Но ничего подобного нет. Поищем что-то более общее. *)
+  Search _ (?x - ?y + ?z).
+  Search _ (?z + ?x - ?y).
+  (* subnDl forall p m n : nat, p + m - (p + n) = m - n *)
+  (* subnDr forall p m n : nat, m + p - (n + p) = m - n *)
+  (* Тоже не подходит. *)
+
+  rewrite addnC.
+
+  Search _ "add" in ssrnat.
+
+  (* Ну вот, тупик. Возможно, стоит попробовать иначе раскрыть скобки.
+     Кажется, мне нужно, чтобы сложение оказалось внутри скобок каким-то образом. *)
+
+  Restart.
+
+  rewrite mulnC.
+  rewrite mulnBr.
+  do 2! rewrite mulnDl.
+  rewrite [in m * n] mulnC.
+  (* Ок, тепеpь у нас сложение внутри скобок. Посмотрим... *)
+  (* m * m + n * m - (n * m + n * n) *)
+  (* subnDr forall p m n : nat, m + p - (n + p) = m - n *)
+  (* Выглядит очень похоже, применим коммутативность сложения: *)
+  rewrite [in (n * m + n * n)]addnC.
+  (* О да, теперь мы можем применить *)
+  rewrite subnDr.
+  by do 2! rewrite mulnn.
+
+  Restart.
+
+  (* Не уверен, что это круто так писать, но ситаксически это корректно. *)
+  by rewrite
+       mulnC mulnBr 2!mulnDl
+       [in m * n]mulnC
+       [in (n * m + n * n)]addnC
+       subnDr 2!mulnn.
+Qed.
 
 Lemma leq_sub_add n m p : n - m <= n + p.
 Proof.
-Admitted.
+  (*
+  Применим ту же схему решения.
+  Cначала ищем максимально специализированные леммы.
+  Если ничего подходящего не находится -- ищем более общие.
+  Пробуем идти разными путями. Если заходим в тупик,
+  возвращаемся на "развилку" и пробуем идти другой тропинкой.
+  *)
+
+  Search _ (?n - ?m <= ?n + ?p).
+
+  Search _ (_ -> _ <= ?n + ?p).
+  Search _ (_ -> _ <= _).
+
+  (* Импликацию и булевы предикаты лучше не смешивать в шаблонах поиска --
+     коэрция [is_true] не вставляется, когда работает [Search].
+
+     Правильно было бы написать запрос вот так: *)
+
+  Search _ ((is_true _) -> is_true (_ <= _)).
+  Search _ ((is_true _) -> is_true (_ <= ?n + ?p)).
+
+  Search _ (_ - _ <= _ + _).
+
+  (* Ничего, попробуем найти более общие. *)
+
+  Search _ (_ <= _ + _).
+  Search _ (_ - _ <= _).
+
+  (* Если не получается искать по шаблону,
+     то нужно пробовать искать по имени. *)
+  Search eq subn addn leq.
+
+  (* Идея в том, чтобы перенести вычитание из левой в правую
+     часть (для этого уже есть стандартная лемма). *)
+
+Qed.
 
 (* prove by induction *)
 Lemma odd_exp m n : odd (m ^ n) = (n == 0) || odd m.
 Proof.
-Admitted.
+Qed.
 
 End Arithmetics.
 
