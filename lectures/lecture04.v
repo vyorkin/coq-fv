@@ -26,22 +26,37 @@ Definition factorial_iter (n : nat) : nat :=
 Lemma factorial_mul_correct n k :
   factorial_mul n k = n`! * k.
 Proof.
-  (* elim: n k. *)
-  (* Undo. *)
-  (* move: n k. *)
-  (* elim. *)
-  (* - move=> k. *)
-  (*   rewrite /factorial_mul. *)
-  (*   (* Print fact0. *) *)
-  (*   rewrite fact0. *)
-  (*   rewrite mul1n. *)
-  (*   by []. *)
-  (* - move=> n IHn. *)
-  (*   About factS. *)
-  (*   rewrite factS. *)
-  (*   rewrite -IHn. *)
-  (*   About mulnCA. *)
-  (*   Print mulnA. *)
+  elim: n k.
+  Undo.
+
+  move: n k.
+  elim.
+  - move=> k.
+    rewrite /factorial_mul.
+    Print fact0.
+    rewrite fact0.
+    rewrite mul1n.
+    by [].
+  - move=> n IHn.
+    (* About factS. *)
+    rewrite factS.
+    (* About mulnA. *)
+    (* Eval hnf in associative muln. *)
+    (* forall x y z : nat, x * (y * z) = x * y * z *)
+    move=> k /=.
+    (* нужно перенести [k] в контекст, тк
+       forall k : nat, P k = Q k
+       по сути равносильно
+       k : nat -> P k = Q k
+       а [rewrite] всегда переписывает в голове цели *)
+    rewrite -mulnA.
+    (* About mulnCA. *)
+    (* Eval hnf in left_commutative muln. *)
+    rewrite -mulnCA.
+    rewrite -IHn.
+    by [].
+
+  Restart.
 
   elim: n k=> [|n IHn] k; first by rewrite fact0 mul1n.
   by rewrite factS /= IHn mulnCA mulnA.
@@ -50,18 +65,21 @@ Qed.
 Lemma factorial_iter_correct n :
   factorial_iter n = n`!.
 Proof.
-  (* elim: n =>/=. *)
-  (* Undo. *)
-  (* elim: n => // n IHn. *)
-  (* rewrite /factorial_iter. *)
+  elim: n =>/=.
+  Undo.
+
+  elim: n => // n _.
+  rewrite /factorial_iter.
   (* rewrite /factorial_iter in IHn. *)
-  (* В ssreflect не работает [rewrite Smth in *] и
-     это не рекомендуемый стиль *)
-  (* move=>/=. *)
-  (* rewrite factorial_mul_correct. *)
-  (* rewrite IHn. *)
-  (* rewrite /factorial /=. *)
-  (* done. *)
+  (* В ssreflect не работает [rewrite Smth in *] и *)
+  (*    это не рекомендуемый стиль *)
+  move=>/=.
+  rewrite factorial_mul_correct.
+  rewrite muln1.
+  rewrite /factorial /=.
+  by rewrite mulnC.
+
+  Restart.
 
   by rewrite /factorial_iter factorial_mul_correct muln1.
 Qed.
@@ -92,7 +110,7 @@ Variable n : nat.
 Lemma default_behavior :
   fib n.+2 = 0.
 Proof.
-move=> /=.  (* fib n.+1 should not get simplified *)
+  move=> /=.  (* fib n.+1 should not get simplified *)
 Abort.
 
 Arguments fib n : simpl nomatch.
@@ -100,7 +118,7 @@ Arguments fib n : simpl nomatch.
 Lemma after_simpl_nomatch :
   fib n.+2 = 0.
 Proof.
-move=> /=.  (* this is what we want *)
+  move=> /=.  (* this is what we want *)
 Abort.
 
 End Illustrate_simpl_nomatch.
@@ -109,7 +127,6 @@ End Illustrate_simpl_nomatch.
 (** The results of the [Arguments] command does not survive
     sections so we have to repeat it here *)
 Arguments fib n : simpl nomatch.
-
 
 (** And here is a more efficient iterative version *)
 Fixpoint fib_iter (n : nat) (f0 f1 : nat) : nat :=
@@ -126,8 +143,8 @@ Lemma fib_iter_sum n f0 f1 :
   fib_iter n.+2 f0 f1 =
   fib_iter n f0 f1 + fib_iter n.+1 f0 f1.
 Proof.
-elim: n f0 f1 => [//|n IHn] f0 f1.
-by rewrite fib_iterS IHn.
+  elim: n f0 f1 => [//|n IHn] f0 f1.
+  by rewrite fib_iterS IHn.
 Qed.
 
 Lemma dup {A} : A -> A * A. Proof. by []. Qed.
