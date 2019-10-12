@@ -146,11 +146,11 @@ Proof.
 
   move=> ? ? step n.
   suffices: P n /\ P n.+1 by case.
-  - elim: n.
-    split=> //.
-    + move=> n [].
-      split=> //.
-      by apply: step.
+  elim: n.
+  split=> //.
+  move=> n [].
+  split=> //.
+  by apply: step.
 Qed.
 
 Lemma div2_le n : div2 n <= n.
@@ -158,29 +158,29 @@ Proof.
   (* Воспользуемся предыдущей леммой и сделаем
      по аналогии с тем, что мы видели в 4-ой лекции. *)
   elim/nat_ind2': n=> // n IHn //=.
-  -
-    (* Вот как я искал. *)
-    (* Search _ "leq" in ssrnat. *)
-    (* Search _ "ltn" in ssrnat. *)
+  (* Вот как я искал: *)
 
-    (* leq_gtF         m <= n -> (n < m) = false *)
-    (* leqW            m <= n -> m <= n.+1 *)
-    (* ltnW            m < n -> m <= n *)
-    (* leq_trans       m <= n -> n <= p -> m <= p *)
-    (* ltn_trans       m < n -> n < p -> m < p *)
-    (* leq_ltn_trans   m <= n -> n < p -> m < p *)
-    (* ltnS            (m < n.+1) = (m <= n) *)
+  (* Search _ "leq" in ssrnat. *)
+  (* Search _ "ltn" in ssrnat. *)
 
-    apply: leqW.
-    by rewrite ltnS.
+  (* leq_gtF         m <= n -> (n < m) = false *)
+  (* leqW            m <= n -> m <= n.+1 *)
+  (* ltnW            m < n -> m <= n *)
+  (* leq_trans       m <= n -> n <= p -> m <= p *)
+  (* ltn_trans       m < n -> n < p -> m < p *)
+  (* leq_ltn_trans   m <= n -> n < p -> m < p *)
+  (* ltnS            (m < n.+1) = (m <= n) *)
+
+  (* Оставим их тут, пусть будут перед глазами,
+     они мне могут ещё пригодиться. *)
+
+  apply: leqW.
+  by rewrite ltnS.
 Qed.
 
 Lemma div2_correct n :
   div2 n = n./2.
-Proof.
-Admitted.
-
-
+Proof. by elim/nat_ind2': n=> // n IHn //=; rewrite IHn. Qed.
 
 (** Strong induction principle *)
 Lemma lt_wf_ind (P : nat -> Prop) :

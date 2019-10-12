@@ -473,29 +473,47 @@ Proof.
   (* subnKC      m <= n -> m + (n - m) = n *)
   (* subnK       m <= n -> n - m + m = n *)
 
+  (* Идея в том, чтобы перенести вычитание из левой в правую
+     часть (для этого уже есть стандартная лемма). *)
+
   rewrite leq_subLR.
   do 2! rewrite addnA addnC.
 
   (* Search _ (?n <= ?n + _). *)
   (* leq_addr  forall m n : nat, n <= n + m *)
   by rewrite leq_addr.
-
-  (* Идея в том, чтобы перенести вычитание из левой в правую
-     часть (для этого уже есть стандартная лемма). *)
-
 Qed.
 
 (* prove by induction *)
 Lemma odd_exp m n : odd (m ^ n) = (n == 0) || odd m.
 Proof.
-Admitted.
+  (* Вспомним, что у нас уже было нечто похожее...
+     Что-то про эквивалентность Мостовского, можно переписать *)
+  About mostowski_equiv_even_odd.
+  rewrite -mostowski_equiv_even_odd.
+  (* Но пока не понятно что именно это нам даёт, вернём обратно *)
+  rewrite mostowski_equiv_even_odd.
+  (* Посмотрим что у нас есть про нечётные числа и про степени. *)
+  Search (_ ^ _) in ssrnat.
+  elim: n.
+  - by rewrite expn0.
+  - move=> n IHn //=.
+    (* expnS  forall m n : nat, m ^ n.+1 = m * m ^ n *)
+    rewrite expnS.
+    Search _ "odd" in ssrnat.
+    (* odd_mul  forall m n : nat, odd (m * n) = odd m && odd n *)
+    rewrite odd_mul.
+    rewrite IHn.
+    case: (odd m) => //=.
+    by rewrite Bool.orb_true_r.
+Qed.
 
 End Arithmetics.
 
 
 
 Section Misc.
-(** Exlpain why the folloing statement is unprovable *)
+(** Exlpain why the following statement is unprovable *)
 
 Definition const {A B} : A -> B -> A := fun a _ => a.
 
