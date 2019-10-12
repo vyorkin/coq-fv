@@ -21,6 +21,7 @@ Search cancel in ssrnat.
 Lemma frobenius A (P : A -> Prop) Q :
   (exists x, Q /\ P x) <-> Q /\ (exists x, P x).
 Proof.
+  (* Сначала глупое решение, до которого я додумался сам: *)
   split.
   - case=> x qpx.
     + case: qpx.
@@ -41,6 +42,8 @@ Proof.
         Fail refine (ex_intro P _ _).
         Set Printing Notations.
         exact: ex_intro ((fun x : A => Q /\ (P x))) x (conj q px).
+
+  Restart.
 Qed.
 
 Lemma exist_conj_commute A (P Q : A -> Prop) :

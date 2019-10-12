@@ -34,6 +34,7 @@ Module Lect3.
       fun n => if n is S n' then n' else tt.
 
     Check erefl : predn_dep 7 = 6.
+    Compute predn_dep 7.
     Fail Check erefl : predn_dep 0 = 0.
     Check predn_dep 0 : unit.
     Check predn_dep 0 : Pred 0.
@@ -45,6 +46,9 @@ Module Lect3.
     (** ** Annotations for dependent pattern matching *)
 
     (** Type inference is undecidable *)
+
+    (* Тут мы просим вывести ф-цию над типами,
+       а это алгоритмически не разрешимая задача. *)
     Fail Check (fun n => if n is S n' then n' else tt).
 
     Check (
@@ -76,7 +80,7 @@ Module Lect3.
     (* Следующие записи эквивалентны *)
     Check predn : nat -> nat.
     (* Мы можем назвать как-то входное значение в типе ф-ции, но
-       [Check] распечатает без него, тк в выходном типе оно никак не используется*)
+       [Check] распечатает без него, тк в выходном типе оно никак не используется *)
     Check predn : forall _ : nat, nat.
     (* Аналогично *)
     Check predn : forall x : nat, (fun _ => nat) x.
@@ -201,6 +205,9 @@ Module Lect3.
        Для того, чтобы воспользоваться этой парой мы должны сделать
        по ней pattern-matching типа [case x px] и получим в контексте 2 значения.
        Зависимая типизация тут это ключевая особенность. *)
+
+    (* В Coq уже есть [ex], определение выше нужно было просто,
+       чтобы посмотреть как оно устроено под капотом. *)
 
     (* Simplified notation *)
 

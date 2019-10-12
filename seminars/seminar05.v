@@ -119,9 +119,7 @@ Arguments div2 : simpl nomatch.
 Lemma nat_ind2' (P : nat -> Prop) :
   P 0 -> P 1 -> (forall n, P n -> P n.+2) -> forall n, P n.
 Proof.
-  (* Попробуем сделать по аналогии с [nat_ind2] из 4-ой лекции. *)
   move=> p0 p1 step n.
-  (* Какие соображения могли привести к идее об усилении цели? *)
   suffices: P n /\ P n.+1 /\ P n.+2.
   - by case.
   - elim: n.
@@ -151,6 +149,22 @@ Proof.
   move=> n [].
   split=> //.
   by apply: step.
+
+  Restart.
+
+  (* И ещё загольфим *)
+
+  move=> ? ? step n.
+  suffices: P n /\ P n.+1 by case.
+  by elim: n=> // ? []; move/step; split.
+
+  Restart.
+
+  (* Версия Antonio *)
+
+  move=> ? ? step n.
+  suff: P n /\ P n.+1 by case.
+  by elim: n=> // ? [ /step ].
 Qed.
 
 Lemma div2_le n : div2 n <= n.
