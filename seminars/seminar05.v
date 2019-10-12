@@ -80,32 +80,100 @@ Proof.
     rewrite -leqNgt.
     (* Search "addr" in ssrnat. *)
     by rewrite leq_addr.
+
+  Restart.
+
+  move=> i _.
+  rewrite nth_ncons ifN.
+  - by rewrite addnC addnK.
+  by rewrite -leqNgt leq_addr.
 Qed.
 
 End LeftPad.
 
-
-
 Section MoreInductionExercises.
 
 (** Implement a recursive function performing integer division by 2 *)
+
+(* Моя первая глупая реализация *)
+Fixpoint div2' (n : nat) : nat :=
+  if n is (n''.+1 as n').+1
+  then S (div2' n'')
+  else O.
+
 Fixpoint div2 (n : nat) : nat :=
-  if n is n.+1 then .
+  if n is n'.+2 then (div2 n').+1 else 0.
+
+Compute div2 2.
+Compute div2 4.
+Compute div2 6.
+Compute div2 8.
+Compute div2 10.
+Compute div2 12.
+Compute div2 14.
+Compute div2 16.
 
 (* You might want to uncomment the following: *)
-(* Arguments div2 : simpl nomatch. *)
+Arguments div2 : simpl nomatch.
 
 Lemma nat_ind2' (P : nat -> Prop) :
-  P 0 ->
-  P 1 ->
-  (forall n, P n -> P n.+2) ->
-  forall n, P n.
+  P 0 -> P 1 -> (forall n, P n -> P n.+2) -> forall n, P n.
 Proof.
-Admitted.
+  (* Попробуем сделать по аналогии с [nat_ind2] из 4-ой лекции. *)
+  move=> p0 p1 step n.
+  (* Какие соображения могли привести к идее об усилении цели? *)
+  suffices: P n /\ P n.+1 /\ P n.+2.
+  - by case.
+  - elim: n.
+    split.
+    + exact: p0.
+    + split.
+      * exact: p1.
+      * Check (step _ p0).
+        exact: (step _ p0).
+  - move=> n [IHn1 [IHn2 IHn3]].
+    split.
+    + exact: IHn2.
+    + split.
+      * exact: IHn3.
+      * apply: step.
+        exact: IHn2.
+
+  Restart.
+
+  (* Заметим, что мы нигде не воспользовались [IH1].
+     Зарефакторим, причешем #1. *)
+
+  move=> ? ? step n.
+  suffices: P n /\ P n.+1 by case.
+  - elim: n.
+    split=> //.
+    + move=> n [].
+      split=> //.
+      by apply: step.
+Qed.
 
 Lemma div2_le n : div2 n <= n.
 Proof.
-Admitted.
+  (* Воспользуемся предыдущей леммой и сделаем
+     по аналогии с тем, что мы видели в 4-ой лекции. *)
+  elim/nat_ind2': n=> // n IHn //=.
+  -
+    (* Вот как я искал. *)
+    (* Search _ "leq" in ssrnat. *)
+    (* Search _ "ltn" in ssrnat. *)
+
+    (* leq_gtF         m <= n -> (n < m) = false *)
+    (* leqW            m <= n -> m <= n.+1 *)
+    (* ltnW            m < n -> m <= n *)
+    (* leq_trans       m <= n -> n <= p -> m <= p *)
+    (* ltn_trans       m < n -> n < p -> m < p *)
+    (* leq_ltn_trans   m <= n -> n < p -> m < p *)
+    (* ltnS            (m < n.+1) = (m <= n) *)
+
+    apply: leqW.
+    by rewrite ltnS.
+Qed.
 
 Lemma div2_correct n :
   div2 n = n./2.

@@ -157,9 +157,26 @@ Lemma nat_ind2 (P : nat -> Prop) :
   (forall n, P n -> P n.+1 -> P n.+2) ->
   forall n, P n.
 Proof.
+  (* Если бы это док-во писал я в первый раз,
+     то я бы написал его следующим образом: *)
+
   move=> p0 p1 step n.
   (* [have: P n /\ P n.+1.], но это другое *)
   (* В ванильном Coq есть аналогичная тактика [enough] *)
+  suffices: P n /\ P n.+1.
+  by case.
+  elim: n.
+  - by [].
+  - move=> n [IHn1 IHn2].
+    split.
+    - exact: IHn2.
+    - apply: step.
+      exact: IHn1.
+  by exact: IHn2.
+
+  Restart.
+
+  move=> p0 p1 step n.
   suffices: P n /\ P n.+1.
   by case.
   elim: n=> // n [IHn1 IHn2].
