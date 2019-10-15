@@ -9,39 +9,46 @@ Section Classical_reasoning.
 (** We assert the classical principle of double negation elimination *)
 Variable DNE : forall A : Prop, ~ ~ A -> A.
 
+(* Evgeny Dashkov, [13.10.19 21:26]
+   Может быть технически проще ввести дизъюнкцию
+
+   (exists x, ~P x) \/ ~(exists x, ~P x)
+
+   - либо    существует такой [x] для которого [P x] не верно
+   - либо НЕ существует такой [x] для которого [P x] не верно
+
+   А затем протащить отрицание под
+   существование (интуиционизм) и снять его там по DNE. *)
+
 (* https://en.wikipedia.org/wiki/Drinker_paradox *)
 Lemma drinker_paradox (P : nat -> Prop) :
   exists x, P x -> forall y, P y.
 Proof.
-Qed.
-
-(* This closes the section, discharging over DNE *)
-End Classical_reasoning.
-
-Check drinker_paradox.
-
-
-
-Section Misc.
-
-Variables A B : Type.
-Implicit Types x y : A * B.
-
-Lemma prod_inj x y :
-  x = y <-> (x.1, x.2) = (y.1, y.2).
-Proof.
-  split=> [-> // | ].
-  (* Unset Printing Notations. *)
+  apply: DNE.
+  rewrite /not.
+  move=> not_DP.
+  apply: (not_DP).
+  exists 0.
+  move=> evP0 y.
+  apply: DNE.
+  rewrite /not.
+  move=> not_Py.
+  apply: (not_Py).
+  case: not_DP.
+  exists y.
+  move=> py x.
+  move: not_Py.
   case.
-  case: x; case: y.
+  exact: py.
+
   Restart.
 
-  by move: x y=> [? ?] [? ?].
+  apply: DNE => not_DP; apply/not_DP.
+  exists 0=> _ y.
+  apply: DNE => nPy; apply/nPy.
+  case: not_DP.
+  by exists y => /nPy.
 Qed.
-
-End Misc.
-
-
 
 Section Arithmetics.
 

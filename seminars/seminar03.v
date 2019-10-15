@@ -29,6 +29,8 @@ Proof.
       split.
       * exact: q.
       * exact: ex_intro P x px.
+        Undo.
+        exists x. exact: px.
     + case=> q evx.
       * move: evx.
       * case=> x px.
@@ -37,13 +39,29 @@ Proof.
            предложит доказать всё недостающее *)
         refine (ex_intro _ _ (conj _ _)).
         Undo.
+
         Unset Printing Notations.
         (* Вот так можно посмотреть какой ожидаетcя вместо [P] *)
         Fail refine (ex_intro P _ _).
         Set Printing Notations.
         exact: ex_intro ((fun x : A => Q /\ (P x))) x (conj q px).
+        Undo.
+
+        (* То же самое можно было бы записать проще:
+           сначала утверждаем, что существует [x], затем
+           предъявляем предикат (который выполняется) для этого [x]. *)
+        exists x.
+        split.
+        - exact: q.
+        exact: px.
 
   Restart.
+
+  (* idiomatic solution *)
+
+  split.
+  - by case=> x [q px]; split=> //; exists x.
+  by case=> [q [x px]]; exists x.
 Qed.
 
 Lemma exist_conj_commute A (P Q : A -> Prop) :
@@ -53,6 +71,10 @@ Proof.
   split.
   - exact: ex_intro P x px.
   exact: ex_intro Q x qx.
+
+  Restart.
+
+  by case=> [x [px qx]]; split; exists x.
 Qed.
 
 Lemma conj_exist_does_not_commute :
@@ -106,6 +128,11 @@ Proof.
     + exact: (ex_intro is_true true).
     + exact: (ex_intro (not \o is_true) false).
   by move=> b; case.
+
+  Restart.
+
+  move/(_ bool id not); case=> [|x [] //].
+  by split; [exists true | exists false].
 Qed.
 
 (* helper lemma *)
@@ -194,6 +221,15 @@ Proof.
         apply: curry_dep.
         (* А это и есть наша гипотеза [H]! *)
         exact: H.
+
+  Restart.
+
+  (* Теперь более идиоматичная запись этого доказательства: *)
+
+  rewrite /not_forall_exists /DNE; split=> [nfe | dne].
+  - move=> P nnP. move: (nfe True (fun _ => P)).
+  by case/(_ (fun t_notP => nnP (t_notP I))).
+  by move=> A P nAll; apply: dne=> /curry_dep/nAll.
 Qed.
 
 End IntLogic.
@@ -212,10 +248,19 @@ Fixpoint mostowski_equiv (a : bool) (n : nat) :=
 Lemma mostowski_equiv_even_odd a n :
   mostowski_equiv a n = a || odd n.
 Proof.
+  (* Моё решение: *)
+
   elim: n=> [|n IHn] /=.
   - by rewrite Bool.orb_false_r.
   rewrite IHn. clear IHn.
-  by case: a=> //=; rewrite eqbF_neg.
+  About eqbF_neg.
+  case: a=> //=. rewrite eqbF_neg.
+
+  Restart.
+
+  (* Решение здорового человека: *)
+
+  by elim: n=> [|n /= ->]; case: a=> //; rewrite eqbF_neg.
 Qed.
 
 End BooleanLogic.
@@ -310,6 +355,11 @@ Proof.
   rewrite maxnE.
   rewrite addnC.
   done.
+
+  Restart.
+
+  (* idiomatic solution *)
+  by rewrite -maxnE maxnC maxnE addnC.
 Qed.
 
 Lemma addnBC m n : n - m + m = m - n + n.
@@ -444,6 +494,11 @@ Proof.
        [in m * n]mulnC
        [in (n * m + n * n)]addnC
        subnDr 2!mulnn.
+
+
+  Restart.
+
+  by rewrite mulnBl !mulnDr addnC mulnC subnDl.
 Qed.
 
 Lemma leq_sub_add n m p : n - m <= n + p.
@@ -485,6 +540,10 @@ Proof.
   (* Search _ (?n <= ?n + _). *)
   (* leq_addr  forall m n : nat, n <= n + m *)
   by rewrite leq_addr.
+
+  Restart.
+
+  by rewrite leq_subLR addnCA leq_addr.
 Qed.
 
 (* prove by induction *)
@@ -509,6 +568,11 @@ Proof.
     rewrite IHn.
     case: (odd m) => //=.
     by rewrite Bool.orb_true_r.
+
+  Restart.
+
+  (* idiomatic solution: *)
+  by elim: n=> //= n IHn; rewrite expnS odd_mul IHn orKb.
 Qed.
 
 End Arithmetics.
@@ -520,8 +584,49 @@ Section Misc.
 
 Definition const {A B} : A -> B -> A := fun a _ => a.
 
+(* [/] means "allow simplification after all the
+   arguments before the slash symbol are supplied" *)
+Arguments const {A B} a b /.
+
 Lemma const_eq A B (x y : A) :
   @const A B x = const y -> x = y.
+(** Explanation:
+    If we had an inhabitant of type [B], i.e. some [b : B],
+    we could apply [const x] and [const y] to [b], getting
+    [x = y] after redusing the beta-redexes as follows: *)
+
+have b: B by admit. (* assume we can construct [b] of type [B] *)
+
+by move=> /(congr1 (@^~ b)).
+
+(** [@^~ b] stands for (fun f => f b), i.e. application at [f].
+
+    move/(congr1 (@^~ b))
+
+turns an equality between two functions [f1] and [f2], i.e. [f1 = f2],
+into the following equality [f1 b = f2 b] *)
+
+(** Now, the problem here is that [B] is an
+    arbitrary type, so it might be empty meaning we
+    would never come up with a proof for the admitted goal. *)
 Abort.
+
+(** Yet another explanation of the above unprovability fact
+    It is known that Coq's theory is compatible with the axiom of functional extensionality.
+    This means that is we assume that axiom, then proving [const_eq] must not
+    lead to a contradiction.
+    Let's show this is not the case here.
+ *)
+
+Axiom fext : forall A (B : A -> Type) (f1 f2 : forall x, B x),
+               (forall x, f1 x = f2 x) -> f1 = f2.
+
+Lemma not_const_eq : ~ (forall A B (x y : A),
+  @const A B x = const y -> x = y).
+Proof.
+move=> /(_ bool Empty_set false true) H.
+apply/notF/H.
+by apply: fext.
+Qed.
 
 End Misc.
