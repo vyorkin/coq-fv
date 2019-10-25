@@ -10,15 +10,32 @@ Section EqType.
 Lemma eq_sym (T : eqType) (x y : T) :
   (x == y) = (y == x).
 Proof.
-Admitted.
+  apply/idP/idP.
+  move/eqP.
+  move=>->.
+  by rewrite eq_refl.
+  move/eqP.
+  move=>->.
+  apply/eqP.
+  by [].
+  Restart.
+
+  apply/eqP/eqP.
+  Restart.
+
+  by rewrite eq_sym.
+Qed.
 (* ^ Hint: use apply/view1/view2 mechanism *)
 
 
 (** Define equality type for the following datatype *)
 Inductive tri :=
 | Yes | No | Maybe.
+
+
 (** This should not fail! *)
 Fail Check (1, Yes) == (1, Maybe).
+
 
 
 (** Define equality type for the [Empty_set] datatype *)
@@ -57,6 +74,7 @@ Admitted.
 Lemma seq_last_notin (s : seq A) x :
         last x s \notin s = (s == [::]).
 Proof.
+  (* Доказательство тут должно быть простое. *)
 Admitted.
 
 End EqType.

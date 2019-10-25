@@ -11,6 +11,8 @@ Variant eq_xor_neq (T : eqType) (x y : T) : bool -> bool -> Set :=
   | EqNotNeq of x = y : eq_xor_neq x y true true
   | NeqNotEq of x != y : eq_xor_neq x y false false.
 
+Print eq_op.
+
 Lemma eqVneq (T : eqType) (x y : T) :
   eq_xor_neq x y (y == x) (x == y).
 Proof.

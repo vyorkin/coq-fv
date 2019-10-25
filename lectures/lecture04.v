@@ -163,6 +163,7 @@ Proof.
   move=> p0 p1 step n.
   (* [have: P n /\ P n.+1.], но это другое *)
   (* В ванильном Coq есть аналогичная тактика [enough] *)
+  (* Усилим цель: *)
   suffices: P n /\ P n.+1.
   by case.
   elim: n.

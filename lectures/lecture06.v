@@ -21,6 +21,11 @@ Variant alt_spec (P : Prop) (b : bool) : bool -> Type :=
 Lemma altP P b :
   reflect P b -> alt_spec P b b.
 Proof.
+  move=> Pb.
+  case: b / Pb.
+  constructor.
+
+  Restart.
 by move=> Pb; case: b / Pb; constructor.
 Qed.
 
