@@ -55,6 +55,9 @@ Section Arithmetics.
 Lemma min_plus_r  n m p  :
   minn n m = n -> minn n (m + p) = n.
 Proof.
+  (* move=> H. *)
+  (* do 2! rewrite -H. *)
+  Search "minn".
 Admitted.
 
 Lemma min_plus_minus m n p :
