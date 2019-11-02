@@ -26,11 +26,13 @@ Definition factorial_iter (n : nat) : nat :=
 Lemma factorial_mul_correct n k :
   factorial_mul n k = n`! * k.
 Proof.
+  (* Индукция по [n], а [k] переместить из
+     контекста в цель (обобщить по [k]) *)
   elim: n k.
   Undo.
 
-  move: n k.
-  elim.
+  (* Тоже самое можно сделать следующим образом *)
+  move: n k. elim.
   - move=> k.
     rewrite /factorial_mul.
     Print fact0.
@@ -38,7 +40,7 @@ Proof.
     rewrite mul1n.
     by [].
   - move=> n IHn.
-    (* About factS. *)
+    About factS.
     rewrite factS.
     (* About mulnA. *)
     (* Eval hnf in associative muln. *)
@@ -72,7 +74,7 @@ Proof.
   rewrite /factorial_iter.
   (* rewrite /factorial_iter in IHn. *)
   (* В ssreflect не работает [rewrite Smth in *] и *)
-  (*    это не рекомендуемый стиль *)
+  (* это не рекомендуемый стиль. *)
   move=>/=.
   rewrite factorial_mul_correct.
   rewrite muln1.
@@ -110,9 +112,12 @@ Variable n : nat.
 Lemma default_behavior :
   fib n.+2 = 0.
 Proof.
-  move=> /=.  (* fib n.+1 should not get simplified *)
+  (* fib n.+1 should not get simplified *)
+  move=> /=.
 Abort.
 
+(* The heuristic avoids to perform a simplification step
+   that would expose a match construct in head position *)
 Arguments fib n : simpl nomatch.
 
 Lemma after_simpl_nomatch :
@@ -161,10 +166,11 @@ Proof.
      то я бы написал его следующим образом: *)
 
   move=> p0 p1 step n.
-  (* [have: P n /\ P n.+1.], но это другое *)
-  (* В ванильном Coq есть аналогичная тактика [enough] *)
   (* Усилим цель: *)
   suffices: P n /\ P n.+1.
+  (* Нужно иметь ввиду, что [have: P n /\ P n.+1.] это другое *)
+  (* В ванильном Coq есть аналогичная тактика [enough] *)
+
   by case.
   elim: n.
   - by [].
@@ -276,8 +282,8 @@ Lemma lt_wf_ind (P : nat -> Prop) :
   (forall m, (forall k : nat, (k < m) -> P k) -> P m) ->
   forall n, P n.
 Proof.
-  (* move=> m n. *)
-  (* Search _ (_ < _ ). *)
+  move=> m n.
+  Search _ (_ < _ ).
 Admitted.
 
 

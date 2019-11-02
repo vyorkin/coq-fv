@@ -71,10 +71,14 @@ Module Nat.
     | O => O
     end.
 
+  (* Termination is obvious when the recursive calls happen only
+     on "syntactically smaller arguments" *)
+
   (* struct n -- structural recursion on parameter n *)
 
-  (* doesn't work, coq is unable to guess that (S n') is
-  "structurally smaller" than n *)
+  (* The folloing doesn't work, Coq is unable to
+     guess that [S n'] is "structurally smaller" than [n] *)
+
 
   (*
   Fixpoint foo (n m : nat) { struct n } : nat :=
@@ -85,7 +89,8 @@ Module Nat.
     end.
   *)
 
-  (* to make it work we should use an alias for (S n') -- Sn' *)
+  (* To make it work we should use
+     an alias for [S n'] -- [Sn'] *)
 
   Fixpoint foo (n m : nat) { struct n } : nat :=
     match n with
@@ -93,6 +98,19 @@ Module Nat.
     | S O => S m
     | O => m
     end.
+
+  Fixpoint eqn m n :=
+    match m, n with
+    | (S p), (S q) => eqn p q
+    | O, O => true
+    | _, _ => false
+    end.
+
+  Notation "x == y" := (eqn x y) (at level 60).
+
+  Eval compute in O == O.
+  Eval compute in O == S O.
+  Eval compute in S O == S O.
 
 End Nat.
 
@@ -111,15 +129,40 @@ Module Props.
   About nat.
   About S.
 
+  (* The mathcomp lib provides a few notations to make the use
+     of the constructor [S] more intuitive to read *)
+
   Locate ".+1".
 
   (* Notation "n .+1" := (S n). *)
   (* Notations can not be partially applied *)
 
+  Variable f : nat -> nat.
+
+  (* The [n.+1] notation binds stronger than function application *)
+  Unset Printing Notations.
+  Check fun n => f n.+1. (* f (S n) *)
+  Set Printing Notations.
+
+  (* Some other notations: *)
   Locate ".-1".
   Locate "_ <= _".
   Locate "_ `!".
   Locate "_ ^ _".
+
+  Definition pred5 (n : nat) : nat :=
+    if n is k.+1.+1.+1.+1.+1 then k else 0.
+
+  (* Sometimes we want to describe more than just two cases: *)
+
+  Definition three_patterns n :=
+    match n with
+    | u.+1.+1.+1.+1.+1 => u
+    | v.+1 => v
+    | o => n
+  end.
+
+  (* Case analisys should be exhaustive *)
 
   (* Apply [n] times a function [f] on
      natural numbers to an input [x] *)

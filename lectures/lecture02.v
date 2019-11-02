@@ -4,6 +4,7 @@ Set Implicit Arguments.
 
 Module Lect2.
   Section ProductType.
+
     Inductive prod (A B : Type) : Type :=
       | pair of A & B.
 
@@ -16,7 +17,18 @@ Module Lect2.
 
     Fail Check pair nat bool 42 true : prod nat bool. (* Inconvenient *)
 
+    (* Оператор локально [@] отменяет вывод неявных аргументов. *)
+
     Check @pair nat bool 42 true.
+
+    (* Писать везде [prod] не очень удобно, в Coq есть механизм
+       нотаций, который позволяет динамически изменить парсер.
+       Как только Coq встречает подобную запись, то он добавляет
+       соотвествующее правило в некоторую таблицу грамматических
+       правил. *)
+
+    (* Т.е. изначально у нас нет ничего в языке и мы начинаем
+       всё самостоятельно постепенно добавлять. *)
 
     Notation "A * B" :=
       (prod A B) (at level 40, left associativity) : type_scope.
@@ -25,9 +37,20 @@ Module Lect2.
 
     Fail Check nat * bool.
 
+    (* Нужно подсказать Coq'у, что это не оператор умножения, а
+       тип произведения двух других типов. *)
+
+    (* Например, это можно сделать вот так: *)
+
     Check (nat * nat)%type.
 
+    (* Или так: *)
+
     Check (nat * nat) : Type.
+
+    (* Ещё можно открыть скоуп и работать в нём. Последний
+       открытый скоуп помещается на вершину стека и по умолчанию
+       Coq будет считать, что мы работаем в нём. *)
 
     Open Scope type_scope.
     Check (nat * nat).
@@ -36,6 +59,9 @@ Module Lect2.
 
     Check ((nat * bool) * nat)%type.
     Check (nat * bool * nat)%type.
+
+    (* У нас уже есть нотация для типов,
+       теперь мы хотим нотацию для термов. *)
 
     Notation "( p ; q )" := (pair p q).
 
@@ -149,6 +175,16 @@ Module Lect2.
         | or_intror proofB => or_introl proofB
         end.
 
+    (*
+    Definition orBad A B :
+      A \/ B -> A :=
+      fun a_or_b =>
+        match a_or_b with
+        | or_introl proofA =>  proofA
+        | or_intror proofB => ?proofA?
+        end.
+    *)
+
     Definition or_and_distr A B C :
       (A \/ B) /\ C -> (A /\ C) \/ (B /\ C) :=
       fun '(conj a_or_b c) =>
@@ -207,6 +243,7 @@ Module Lect2.
     Fail Definition LEM (A : Prop) :
       (* A \/ (A -> False) *)
       A \/ ~A := __.
+      (* Имея произвольное [A] мы не можем доказать ложь [False]. *)
       (* or_intror (fun a : A => ?False) *)
 
   End IPL.
@@ -267,6 +304,7 @@ Module Lect2.
     Check @eq nat 1 1.
     Check eq_refl 1 : @eq nat 1 1.
     Check eq_refl 2 : eq 2 2.
+    (* Первый параметр типа неявный, а второй (число) явный. *)
     Fail Check eq_refl 1 : eq 1 2.
     (* ^^ The term [eq_refl 1] as type [eq 1 1] while
            it is expected to have type [eq 1 2] *)
@@ -338,13 +376,18 @@ Module Lect2.
     Definition foo_blah A (x : A) :
       foo x x x := foo_ctor x.
 
-    Lemma A_implies_B (A : Prop) :
+    Lemma A_implies_A' (A : Prop) :
       A -> A.
-    Proof. (* optional *)
+    Proof. (* <-- optional *)
       Show Proof. (* (fun A : Prop => ?Goal) *)
       move=> a.
+      (* Когда мы это написали, по сути мы сказали следующее: *)
+      (* fun a => ??? *)
+      (* Т.е. что у нас есть ф-ция от переменной [a],
+         тело которой следует после точки. *)
       Show Proof. (* (fun (A : Prop) (a : A) => ?Goal) *)
       exact: a.
+      Show Proof.
       Undo 2.
       by [].
     Qed.
@@ -359,7 +402,7 @@ Module Lect2.
     Proof.
       case. (* делает паттерн-матчинг *)
             (* "case" по сути тоже самое, что и "move=> []" *)
-      (* Show Proof. *)
+      Show Proof.
       case.
       (* Show Proof. *)
       - move=> a c.
@@ -375,6 +418,10 @@ Module Lect2.
         + exact b.
           apply c. (* [exact] и [apply] - синонимы *)
     Qed.
+    (* Когда мы пишем [Defined], то тело
+       доказательства становится достуным тайпчекеру (прозрачным).
+       Позволяет управлять производительностью.
+       Прозрачные определения\док-ва позволяют "считать" с их помощью. *)
     (* Defined. *)
     About or_and_distr'.
 

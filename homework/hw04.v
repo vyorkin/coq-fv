@@ -54,7 +54,7 @@ Proof.
 Admitted.
 
 Fixpoint rev_rec {A : Type} (xs : seq A) : seq A :=
-  if xs is (x::xs') then
+  if xs is (x :: xs') then
     rev_rec xs' ++ [:: x]
   else xs.
 

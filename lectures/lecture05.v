@@ -71,7 +71,8 @@ Proof.
   (* rewrite /is_true. *)
   (* Unset Printing Coercions. *)
   case.
-  - move=> _ _. done.
+  - move=> _ _.
+    done.
     move=> np.
     move=> top.
     exact: id.
@@ -79,6 +80,8 @@ Proof.
     move: (np top).
     Undo 2.
     move/np.
+    (* Конструкторов у False нет, поэтому это доказывается
+       просто вот так (разбором всех конструкторов, которых нет): *)
     case.
 Qed.
 
@@ -90,7 +93,20 @@ Lemma elimT_my (P : Prop) (b : bool) :
 Proof.
   case.
   - move=> p _. exact: p.
-  move=> _. done.
+    move=> _.
+    done.
+    (* [done] uses the [discriminate] tactic under the hood *)
+    Undo.
+    (* The discriminate tactic proves that different
+       constructors of an inductive type cannot be equal.
+       In other words, if the goal is an inequality consisting of
+       two different constructors, discriminate will solve the
+       goal. Discriminate also has another use: if the context
+       contains a equality between two different constructors
+       (i.e. a false assumption), you can use discriminate to prove any goal.
+       https://www.cs.cornell.edu/courses/cs3110/2018sp/a5/coq-tactics-cheatsheet.html#discriminate
+       *)
+    discriminate.
 Qed.
 
 (** Essentially, a [reflect] predicate connects
@@ -113,13 +129,22 @@ Qed.
 Lemma andP_my (b c : bool) :
   reflect (b /\ c) (b && c).
 Proof.
+  (* Locate "/\". *)
+  (* Locate "&&". *)
+  (* About and. *)
+  (* About andb. *)
+  (* Set Printing Coercions. *)
+  (* Check (is_true b). *)
   case b.
   - case c=> /=.
-    (* тактика [constructor] подбирает тот конструктор,
-       который нужен в данном контексте. в данном случае конструктор
+    (* Тактика [constructor] подбирает тот конструктор,
+       который нужен в данном контексте. В данном случае конструктор
        можно восстановить единственным образом. *)
-    constructor.
-    by [].
+    + constructor. by [].
+    + constructor. by case.
+    + case c=> /=.
+      * constructor. by case.
+      * constructor. by case.
 
   Restart.
 
@@ -129,10 +154,36 @@ Qed.
 
 Lemma orP_my (b c : bool) :
   reflect (b \/ c) (b || c).
-Proof. (* exercise *) Admitted.
+Proof.
+  case b => /=.
+  - case c.
+    + constructor.
+      by apply or_introl.
+      Undo 2.
+      by do 2! constructor.
+    by do 2! constructor.
+    case c.
+    + constructor. by apply or_intror.
+      Undo 2.
+      constructor.
+      by constructor 2.
+    constructor. by case.
+
+  (* case: b=> /=; case c; do 2? constructor. *)
+Qed.
 
 Lemma nandP_my b c : reflect (~~ b \/ ~~ c) (~~ (b && c)).
-Proof. by case: b; case: c; constructor; auto; case. Qed.
+Proof.
+  case: b.
+  - case: c.
+    constructor.
+    auto.
+    case.
+
+  Restart.
+
+  by case: b; case: c; constructor; auto; case.
+Qed.
 
 
 

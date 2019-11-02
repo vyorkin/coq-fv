@@ -33,6 +33,9 @@ Module Lect3.
     Definition predn_dep : forall n, Pred n :=
       fun n => if n is S n' then n' else tt.
 
+    Print erefl.
+    Print Logic.eq_refl.
+
     Check erefl : predn_dep 7 = 6.
     Compute predn_dep 7.
     Fail Check erefl : predn_dep 0 = 0.
@@ -71,10 +74,13 @@ Module Lect3.
 
     (*
        "A -> B" := forall _ : A, B
-       Это зависимая ф-ция, в том случае, когда возвращаемый тип никак не зависит от входного значения.
+       Это зависимая ф-ция, в том случае, когда возвращаемый тип
+       никак не зависит от входного значения.
+
        Это нотация из стандартной библиотеки, которая означает:
-       для неважно какого значения из типа [A] мы всегда возвращаем один и тот же тип [B].
- *)
+       для неважно какого значения из типа [A] мы всегда
+       возвращаем один и тот же тип [B].
+    *)
     Locate "->".
 
     (* Следующие записи эквивалентны *)
@@ -195,7 +201,10 @@ Module Lect3.
     Inductive ex_my (A : Type) (P : A -> Prop) : Prop :=
     (* Кодируем introduction rule (правило ввода) следующим образом:
        конструктор "содержит" 2 значения:
-       некоторый [x : A] и док-во, что [P x] выполняется. *)
+       некоторый [x : A] и док-во, что [P x] выполняется
+       (на самом деле -- просто некоторое утверждение, параметризованное [x],
+       "выполняется" это всего лишь наша интерпретация, оно может и не выполняться,
+       но в таком случае система станет противоречивой, что станет понятно позже) *)
     | ex_intro (x : A) (proof : P x).
 
     (* ex_intro [предикат] [значение] [доказательство, что предикат выполняется на этом значении] *)
@@ -290,7 +299,8 @@ Module Lect3.
     Proof.
       move=> x.
       case=> y rxy.
-      move: (Rsym rxy). move: rxy.
+      move: (Rsym rxy).
+      move: rxy.
       apply: Rtrans.
     Qed.
 
@@ -332,13 +342,13 @@ Module Lect3.
      False -> is_true false
 
      forall _ : False, @eq bool false true
-
-     Вот так, например, определена коэрция [is_true]:
   *)
   Proof. case. Qed.
 
-  (* Unset Printing Notations. *)
-  (* Print is_true. *)
+  (* Вот так, например, определена коэрция [is_true]: *)
+  Unset Printing Notations.
+  Print is_true.
+  Set Printing Notations.
 
   (* Coercion is_true : bool >-> Sortclass. *)
   (* Print Coercions. *)

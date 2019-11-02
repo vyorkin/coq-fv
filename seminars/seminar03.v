@@ -6,7 +6,7 @@ Unset Printing Implicit Defensive.
 
 Section IntLogic.
 
-(* Вот так надо хотеть^W искать! *)
+(* Вот так надо искать (впихивая коэрции самостоятельно\явно) *)
 Search _ ((is_true (?m <= ?n)) -> (is_true (?n <= ?p)) -> (is_true (?m <= ?p))).
 (* А ещё можно искать в конкретном модуле *)
 Search _ involutive in seq.
