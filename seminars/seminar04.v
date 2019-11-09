@@ -29,36 +29,45 @@ Proof.
 
   by elim: n => //= n IHn; rewrite IHn mulnS.
 
-  (* Eval hnf in left_commutative muln. *)
+  Restart.
+
+  by elim: n=> //= n ->; rewrite mulnS.
 Qed.
 
 Lemma double_inj m n :
   m + m = n + n -> m = n.
 Proof.
-  (* Search _ "inj" in ssrnat. TODO *)
+  elim: m n.
+  - rewrite addn0.
+    case.
+    + by rewrite add0n.
+    + by [].
+    move=> n IHn n0.
+    rewrite addnS addSn.
+    move=> H.
 
-  elim: m.
-  by case: n.
-  move=> m.
+  move=> m IHm n.
+  rewrite addSn.
+  rewrite addnS.
   case: n.
   - by [].
-
-  Restart.
-
-  move: n.
-  elim: m.
-  - by case.
-  move=> n IHn n0.
-  rewrite addSn.
-  Search _ "mul".
-  Eval hnf in left_commutative muln.
+    move=> n.
+    rewrite addSn addnS.
+    (* S (S x) = S (S y) -> x = y *)
+    case.
+    move/IHm.
+    move=> top.
+    rewrite top.
+    Undo 2.
+    move=>->.
+    done.
 Qed.
 
 
 (** Write a tail-recursive variation of the [addn] function
     (let's call it [addn_iter]). *)
 Fixpoint add_iter (n m : nat) {struct n}: nat.
-Admitted.
+Qed.
 
 Lemma add_iter_correct m n :
   add_iter m n = m + n.

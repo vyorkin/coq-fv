@@ -31,7 +31,7 @@ move=> /andP.
 rewrite /is_true.
 move=> [].
 move=> ->.
-move/IHs.
+move/IHs. (* move=> top. move: (IHs top). *)
 move=>->.
 done.
 
@@ -131,7 +131,7 @@ Lemma andP_my (b c : bool) :
 Proof.
   (* Locate "/\". *)
   (* Locate "&&". *)
-  (* About and. *)
+  About and.
   (* About andb. *)
   (* Set Printing Coercions. *)
   (* Check (is_true b). *)
@@ -254,15 +254,28 @@ Qed.
 (** Specification for [eqn] -- decision procedure for equality on [nat]s *)
 Lemma eqnP_my (n m : nat) : reflect (n = m) (eqn n m).
 Proof.
+  elim: n m.
+  Undo.
+  elim: n m=> [|n IHn] [|m].
+  - by constructor.
+  - by constructor.
+  - by constructor.
+  - move=> /=. Restart.
 
 elim: n m=> [|n IHn] [|m]; try constructor=> //.
-
 move=> /=.
 
-(** Need to convert a [reflect]-based propositions into biimplications *)
-Search reflect -seq -"or" -"and" -"mem" -negb -minn.
+(** Need to convert a [reflect]-based propositions into bi-implications *)
+(* Search reflect -seq -"or" -"and" -"mem" -negb -minn. *)
 
+About iffP.
+(* forall (P Q : Prop) (b : bool), *)
+(* reflect P b -> (P -> Q) -> (Q -> P) -> reflect Q b *)
+Check (IHn m).
+(* reflect (n = m) (eqn n m) *)
 Check iffP (IHn m).
+(* (n = m -> ?Q) -> (?Q -> n = m) -> reflect ?Q (eqn n m) *)
+
 (**
 How the conclusion of [iffP (IHn m)] matches with the goal:
 
@@ -271,11 +284,23 @@ How the conclusion of [iffP (IHn m)] matches with the goal:
 
 Coq infers [?Q] existential variable to be [n.+1 = m.+1]
 *)
-by apply: (iffP (IHn _)) => [-> | /succn_inj].
+
+apply: (iffP (IHn m)).
+- by move=> ->.
+- About succn_inj.
+  by move/succn_inj.
+  Undo.
+  apply: succn_inj.
+Undo 5.
+
+by apply: (iffP (IHn m)) => [-> | /succn_inj].
 
 Restart.
 
-apply: (iffP idP).   (** [idP] -- the trivial reflection view *)
+About iffP.
+About idP.
+Check (iffP idP).
+apply: (iffP idP). (** [idP] -- the trivial reflection view *)
 - by elim: n m => [|n IHn] [|m] //= /IHn->.
 - move=> ->. by elim: m.
 Qed.
@@ -297,15 +322,26 @@ Qed.
 Lemma nseqP (T : eqType) n (x y : T) :
   reflect (y = x /\ n > 0) (y \in nseq n x).
 Proof.
-rewrite mem_nseq andbC.
-apply: (iffP andP).
-case=> /eqP->. done.
-case=>->. done.
+(* rewrite mem_nseq andbC. *)
 
-Restart.
+(* [iffP andP] позволяет одновременно разбить цель на 2 подцели и
+   булево [&&] внутри правой части заменить на логическое [/\] *)
+(* apply: (iffP andP). *)
 
-by rewrite mem_nseq andbC; apply: (iffP andP) => -[/eqP].
-Qed.
+(* Тут [eqP] используется, чтобы перейти от булева к пропозициональному
+   равенству, с которым мы можем делать переписывания *)
+(* case. move/eqP. move=>->. done. *)
+(* Undo 4. *)
+
+(* case=> /eqP->. done. *)
+(* Тут делаем то же самое, только у нас тут сразу имеется пропозициональное равенство,
+   поэтому вид применять не нужно *)
+(* case=>->. done. *)
+
+(* Restart. *)
+
+(* by rewrite mem_nseq andbC; apply: (iffP andP) => -[/eqP]. *)
+Admitted.
 
 
 
@@ -317,9 +353,19 @@ About maxn_idPl.
 Lemma leq_max m n1 n2 :
   (m <= maxn n1 n2) = (m <= n1) || (m <= n2).
 Proof.
-case/orP: (leq_total n2 n1) => [le_n21 | le_n12].
+  case/orP: (leq_total n2 n1) => [le_n21 | le_n12].
+  Undo.
 
-rewrite (maxn_idPl le_n21).
+  About leq_total.
+  move: (leq_total n2 n1).
+  move/orP.
+  case. move=> le_n21.
+  Undo 2.
+  case=> [le_n21 | le_n12].
+  - About maxn_idPl.
+    rewrite (maxn_idPl le_n21).
+    Undo.
+    rewrite (@maxn_idPl n1 n2 le_n21).
 
 (** Why does this work?
     [maxn_idPl] is _not_ a function but behaves like one here *)

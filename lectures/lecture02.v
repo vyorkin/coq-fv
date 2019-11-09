@@ -428,6 +428,9 @@ Module Lect2.
     Lemma or_and_distr'' A B C :
       (A \/ B) /\ C -> A /\ C \/ B /\ C.
     Proof.
+      move=> [[a | b] c].
+      Restart.
+
       by move=> [[a | b] c]; [left | right].
     Qed.
 

@@ -26,8 +26,10 @@ Definition factorial_iter (n : nat) : nat :=
 Lemma factorial_mul_correct n k :
   factorial_mul n k = n`! * k.
 Proof.
-  (* Индукция по [n], а [k] переместить из
-     контекста в цель (обобщить по [k]) *)
+  (* Индукция по [n] (голове), а [k] переместить из
+     контекста в цель (обобщить по [k]).
+     Когда у нас есть [:] и справа от него мы перечисляем
+     какие-то термы, то они в таком порядке и будут появляться в цели. *)
   elim: n k.
   Undo.
 
@@ -142,12 +144,29 @@ Arguments fib_iter : simpl nomatch.
 
 Lemma fib_iterS n f0 f1 :
   fib_iter n.+1 f0 f1 = fib_iter n f1 (f0 + f1).
-Proof. by []. Qed.
+Proof.
+  case: n.
+  - rewrite /fib_iter. done.
+  move=>//=. (* Равны по определению [fib_iter] *)
+Qed.
 
 Lemma fib_iter_sum n f0 f1 :
   fib_iter n.+2 f0 f1 =
   fib_iter n f0 f1 + fib_iter n.+1 f0 f1.
 Proof.
+  elim: n f0 f1.
+  - move=> n IHn.
+    rewrite /fib_iter.
+    done.
+  - move=> n IHn f0 f1.
+    rewrite fib_iterS.
+    rewrite IHn.
+    rewrite [in fib_iter n.+1 f0 f1] fib_iterS.
+    rewrite [in fib_iter n.+2 f0 f1] fib_iterS.
+    done.
+
+  Restart.
+
   elim: n f0 f1 => [//|n IHn] f0 f1.
   by rewrite fib_iterS IHn.
 Qed.
@@ -166,22 +185,34 @@ Proof.
      то я бы написал его следующим образом: *)
 
   move=> p0 p1 step n.
-  (* Усилим цель: *)
+  (* elim: n=> // n IHn. *)
+
+  (* Усилим цель (чтобы получить более сильную гипотезу индукции) *)
   suffices: P n /\ P n.+1.
-  (* Нужно иметь ввиду, что [have: P n /\ P n.+1.] это другое *)
+  (* Нужно иметь ввиду, что [have: P n /\ P n.+1.] это тоже самое,
+     только подцели появятся в обратном порядке. *)
   (* В ванильном Coq есть аналогичная тактика [enough] *)
 
-  by case.
+  case.
+  move=> pn _.
+  exact: pn.
+
   elim: n.
   - by [].
+    Undo.
+    split.
+    + exact: p0.
+    + exact: p1.
   - move=> n [IHn1 IHn2].
     split.
-    - exact: IHn2.
-    - apply: step.
+    + exact: IHn2.
+    + apply: step.
       exact: IHn1.
   by exact: IHn2.
 
   Restart.
+
+  (* Вот так мы разбирали этот пример на лекции: *)
 
   move=> p0 p1 step n.
   suffices: P n /\ P n.+1.
@@ -208,9 +239,17 @@ Proof.
   by elim: n=> // n [/Istep pn12] /dup[/pn12].
 Qed.
 
+
 Lemma fib_iter_correct n :
   fib_iter n 0 1 = fib n.
 Proof.
+  elim/nat_ind2: n.
+  Undo.
+  elim/nat_ind2: n=> // n IHn1 IHn2.
+  move=>/=.
+  rewrite -IHn1. rewrite -IHn2.
+  Undo 4.
+
   elim/nat_ind2: n=> // n IHn0 IHn1.
   by rewrite fib_iter_sum /= -IHn0 -IHn1 addnC.
   Undo 2.
