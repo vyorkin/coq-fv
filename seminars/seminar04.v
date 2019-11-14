@@ -40,39 +40,35 @@ Proof.
   elim: m n.
   - rewrite addn0.
     case.
-    + by rewrite add0n.
-    + by [].
-    move=> n IHn n0.
+    + rewrite add0n. done.
+    + move=> n. rewrite addSn addnS. by [].
+    move=> n IHn m.
     rewrite addnS addSn.
-    move=> H.
-
-  move=> m IHm n.
-  rewrite addSn.
-  rewrite addnS.
-  case: n.
-  - by [].
-    move=> n.
-    rewrite addSn addnS.
-    (* S (S x) = S (S y) -> x = y *)
+    case: m.
+    + rewrite add0n. by [].
+    move=> m.
+    rewrite !addnS !addSn.
     case.
-    move/IHm.
-    move=> top.
-    rewrite top.
-    Undo 2.
-    move=>->.
-    done.
+    move/IHn.
+    Search _ (?n = ?m -> ?n.+1 = ?m.+1).
+    About eq_S.
+    apply: eq_S.
 Qed.
-
 
 (** Write a tail-recursive variation of the [addn] function
     (let's call it [addn_iter]). *)
-Fixpoint add_iter (n m : nat) {struct n}: nat.
-Qed.
+Fixpoint add_iter (n m : nat) {struct n}: nat :=
+  if n is n'.+1 then S (add_iter n' m)
+  else m.
 
 Lemma add_iter_correct m n :
   add_iter m n = m + n.
-Admitted.
-
+Proof.
+  move: n.
+  elim.
+  Restart.
+  by elim/nat_ind: n.
+Qed.
 
 Fixpoint fib (n : nat) : nat :=
   if n is (n''.+1 as n').+1 then fib n'' + fib n'
@@ -81,7 +77,22 @@ Arguments fib n : simpl nomatch.
 
 Lemma leq_add1l p m n :
   m <= n -> m <= p + n.
-Admitted.
+Proof.
+  (* Search _ ((is_true (?m <= ?n)) -> (is_true (?n <= ?p)) -> (is_true (?m <= ?p))). *)
+  (* Search _ ((?m <= ?n) -> _). *)
+
+  (* leq_trans      forall n m p : nat, m <= n -> n <= p -> m <= p *)
+  (* leq_ltn_trans  forall n m p : nat, m <= n -> n < p -> m < p *)
+
+  (* leq_sub2r  forall p m n : nat, m <= n -> m - p <= n - p *)
+  (* addnBA     forall m n p : nat, p <= n -> m + (n - p) = m + n - p *)
+  (* addnBAC    forall m n p : nat, n <= m -> m - n + p = m + p - n *)
+  (* addnBCA    forall m n p : nat, p <= m -> p <= n -> m + (n - p) = n + (m - p) *)
+  (* addnABC    forall m n p : nat, p <= m -> p <= n -> m + (n - p) = m - p + n *)
+  (* subnBA     forall m n p : nat, p <= n -> m - (n - p) = m + p - n *)
+
+  move=> H.
+Qed.
 
 Lemma fib_monotone m n :
   m <= n -> fib m <= fib n.

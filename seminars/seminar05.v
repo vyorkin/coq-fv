@@ -10,8 +10,8 @@ Section LeftPad.
 (**
 What is "leftpad"?
 
-Leftpad is a function that takes a character, a length, and a string, and pads the string to that length.
-It pads it by adding the character to the left.
+Leftpad is a function that takes a character, a length, and a string,
+and pads the string to that length. It pads it by adding the character to the left.
 
 Compute leftpad 0 5 [:: 1; 2; 3]. (* = [:: 0; 0; 1; 2; 3] *)
 Compute leftpad 0 2 [:: 1; 2; 3]. (* = [:: 1; 2; 3]  *)
@@ -201,7 +201,26 @@ Lemma lt_wf_ind (P : nat -> Prop) :
   (forall m, (forall k : nat, (k < m) -> P k) -> P m) ->
   forall n, P n.
 Proof.
-Admitted.
+suff: forall s, forall k, k < s -> P k.
+move=> H_s H n.
+(* Check (H_s n). *)
+(* Check ((H n) (H_s n)). *)
+exact: ((H n) (H_s n)).
+elim.
+- by case.
+case=> H k.
+(* Ок, после половины дня мучений сдаюсь...
+   Подсмотрим и будем разбирать готовое решение по шагам. *)
+Restart.
+
+move=> step n.
+elim: n {-2}n.
+
+About leqnn.
+About ltnS.
+About ltnSn.
+About leq_trans.
+Qed.
 
 
 Fixpoint divn_my (n m : nat) {struct n} : nat :=
