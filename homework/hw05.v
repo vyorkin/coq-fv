@@ -16,11 +16,11 @@ Print eq_op.
 Lemma eqVneq (T : eqType) (x y : T) :
   eq_xor_neq x y (y == x) (x == y).
 Proof.
-  case: (@eqP _ x y). Undo.
   rewrite eq_sym.
   case: eqP.
   move=>->.
-  constructor.
+  - by constructor.
+  - by constructor; apply/eqP.
 Qed.
 
 (* Use eqVneq to prove the following lemma.
