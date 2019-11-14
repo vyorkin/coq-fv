@@ -23,7 +23,7 @@ Proof.
 (* Print all. *)
 (* Print filter. *)
 
-elim: s => //= x s IHs.
+elim: s=> //= x s IHs.
 rewrite /is_true.
 (* About andP. *)
 move=> /andP.
@@ -262,15 +262,30 @@ Proof.
   - by constructor.
   - move=> /=. Restart.
 
+(* Убираем/доказываем все не интересные случаи *)
+
 elim: n m=> [|n IHn] [|m]; try constructor=> //.
 move=> /=.
 
-(** Need to convert a [reflect]-based propositions into bi-implications *)
-(* Search reflect -seq -"or" -"and" -"mem" -negb -minn. *)
+(* reflect (n.+1 = m.+1) (eqn n m)
 
+   Справа у нас нет ни [true] ни [false] в явном виде,
+   поэтому мы не знаем какой конструктор выбрать. *)
+
+(** Need to convert a [reflect]-based propositions into bi-implications *)
+Search reflect -seq -"or" -"and" -"mem" -negb -minn.
+
+(* Позволяет преобразовывать цель, которая
+   выражена через [reflect], в логическую эквивалентность. *)
 About iffP.
-(* forall (P Q : Prop) (b : bool), *)
-(* reflect P b -> (P -> Q) -> (Q -> P) -> reflect Q b *)
+
+(* forall (P Q : Prop) (b : bool),
+   reflect P b -> (P -> Q) -> (Q -> P) -> reflect Q b *)
+
+(* Мы должны показать, что [P] и [b] связаны друг с другом (предъявить [reflect P b]).
+   После этого [iffP] нам позволит перейти к доказательству би-импликации [P <-> Q],
+   если мы покажем, что за [Q] мы имеем ввиду. *)
+
 Check (IHn m).
 (* reflect (n = m) (eqn n m) *)
 Check iffP (IHn m).
@@ -279,19 +294,20 @@ Check iffP (IHn m).
 (**
 How the conclusion of [iffP (IHn m)] matches with the goal:
 
-                                         reflect (n.+1 = m.+1) (eqn n m)
-       (n = m -> ?Q) -> (?Q -> n = m) -> reflect ?Q            (eqn n m)
+                                  reflect (n.+1 = m.+1) (eqn n m)
+(n = m -> ?Q) -> (?Q -> n = m) -> reflect ?Q            (eqn n m)
 
 Coq infers [?Q] existential variable to be [n.+1 = m.+1]
 *)
 
 apply: (iffP (IHn m)).
-- by move=> ->.
+(* Теперь нужно доказать эквивалентность [n = m] и [eqn n m] *)
+- move=> H. rewrite H. done.
 - About succn_inj.
   by move/succn_inj.
   Undo.
   apply: succn_inj.
-Undo 5.
+Undo 7.
 
 by apply: (iffP (IHn m)) => [-> | /succn_inj].
 
@@ -305,6 +321,15 @@ apply: (iffP idP). (** [idP] -- the trivial reflection view *)
 - move=> ->. by elim: m.
 Qed.
 
+
+Variable b1 : bool.
+
+Lemma idP' : reflect b1 b1.
+Proof.
+case b1.
+- by constructor.
+by constructor.
+Qed.
 
 Lemma silly_example_iffP_andP (b c : bool) :
   reflect (b /\ c) (b && c).
@@ -358,9 +383,13 @@ Proof.
 
   About leq_total.
   move: (leq_total n2 n1).
+  (* Но это лемма доказана для булева [||], а не для логического.
+     Поэтому применим вид [move/orP], чтобы можно было разобрать по случаям с [case]. *)
   move/orP.
-  case. move=> le_n21.
+  case.
+  move=> le_n21.
   Undo 2.
+  (* Называем как-то оба случая и помещаем их в контекст. *)
   case=> [le_n21 | le_n12].
   - About maxn_idPl.
     rewrite (maxn_idPl le_n21).
@@ -415,16 +444,18 @@ by case: ltngtP.
 Restart.
 
 case: ltngtP.
+done. done.
+move=>/=.
 Abort.
 
 
 Module Trichotomy.
 
 Variant compare_nat m n :
-   bool -> bool -> bool -> bool -> bool -> bool -> Set :=
-  | CompareNatLt of m < n : compare_nat m n true false true false false false
-  | CompareNatGt of m > n : compare_nat m n false true false true false false
-  | CompareNatEq of m = n : compare_nat m n true true false false true true.
+  bool -> bool -> bool -> bool -> bool -> bool -> Set :=
+| CompareNatLt of m < n : compare_nat m n true  false true  false false false
+| CompareNatGt of m > n : compare_nat m n false true  false true  false false
+| CompareNatEq of m = n : compare_nat m n true  true  false false true  true.
 
 Lemma ltngtP m n : compare_nat m n (m <= n) (n <= m) (m < n)
                                    (n < m)  (n == m) (m == n).
@@ -438,7 +469,14 @@ Qed.
 
 (** One more example *)
 Lemma maxnC : commutative maxn.
-Proof. by move=> m n; rewrite /maxn; case: ltngtP. Qed.
+Proof.
+move=> m n.
+rewrite /maxn.
+case: ltngtP.
+done.
+done.
+done.
+Qed.
 
 End Trichotomy.
 
@@ -461,6 +499,14 @@ End Trichotomy.
 (** E.g. [is_true] makes the following typecheck *)
 Check (erefl true) : true.
 
+(* Это работает потому, что на самом деле тут
+   стоит коэрция [is_true], которая делает следующее: *)
+Check (erefl true) : (true = true).
+(* Можно в этом убедиться вот так: *)
+Set Printing Coercions.
+Check (is_true true).
+Unset Printing Coercions.
+
 
 
 (** * [elimT] coercion *)
@@ -475,7 +521,11 @@ Section ElimT_Example.
 Variables b c : bool.
 Hypothesis H : b || c.
 
+(* У нас есть лемма, которая связывает булеву и пропозициональную конъюнкцию, то
+   мы может это использовать как ф-цию, благодаря тому, что (как было показано выше)
+   не явно вставляется [elimT : forall (P : Prop) (b : bool), reflect P b -> b -> P] *)
 Check orP H.
+
 Set Printing Coercions.
 Check orP H.
 Unset Printing Coercions.
