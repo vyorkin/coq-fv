@@ -218,7 +218,6 @@ Module Lect3.
     (* В Coq уже есть [ex], определение выше нужно было просто,
        чтобы посмотреть как оно устроено под капотом. *)
 
-    (* Simplified notation *)
 
     (** Simplified notation *)
     Notation "’exists’ x : A , p" :=
@@ -251,6 +250,17 @@ Module Lect3.
   (* Можно имитировать обычную пару при помощи exists:
      A /\ B
      exists _ : A, B
+
+     Т.е. существует некоторое
+     утверждение _ (которое мы никак не именуем) типа [A]
+     и утверждение типа [B].
+
+     Если ты совсем тупой (как я), то
+     попробуй посмотреть на подстановку:
+
+     Notation "’exists’ _ : A, B" :=
+      (ex (fun x : A => B))
+        (at level 200, right associativity).
   *)
 
   (* Definition curry' {A B C} : *)
@@ -259,7 +269,7 @@ Module Lect3.
 
   Definition curry {A B C} :
     (A * B -> C) -> (A -> B -> C).
-  (* Не будем тут писать слово Proof., тк тут мы
+  (* Не будем тут писать слово [Proof], тк тут мы
      имеем ввиду некую вычислительную сущность, а не док-во *)
   move=> f a b.
   (* exact: (f (pair a b)). *)
@@ -277,16 +287,16 @@ Module Lect3.
   Qed.
 
   Section Symmetric_Transitive_Relation.
-    (* У нас есть некоторое отношение над типом [D] *)
+    (* У нас есть некоторое отношение [R] над типом [D] *)
     Variables (D : Type) (R : D -> D -> Prop).
 
     (* [Hypothesis] is a different syntax for [Variable] *)
 
-    (* отношение симметрично *)
+    (* Отношение симметрично *)
     Hypothesis Rsym :
       forall x y, R x y -> R y x.
 
-    (* отношение транзитивно *)
+    (* Отношение транзитивно *)
     Hypothesis Rtrans :
       forall x y z, R x y -> R y z -> R x z.
 

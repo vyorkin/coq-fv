@@ -28,13 +28,39 @@ Proof.
   rewrite /not.
   move=> not_DP.
   apply: (not_DP).
+
   exists 0.
+  Undo.
+  apply: (ex_intro _ 0).
+
   move=> evP0 y.
   apply: DNE.
   rewrite /not.
   move=> not_Py.
   apply: (not_Py).
+
+  (* Здесь паттерн-матчинг делается по доказательству [False] для
+     моментального доказательства цели
+     (т.е. мы пользуемся приципом "ex falso quodlibet" или "прицип взрыва"),
+     а для того, чтобы можно было этим доказательством воспользоваться мы
+     должны сначала доказать предпосылку:
+     [exists x : nat, P x -> forall y : nat, P y] *)
+
+  (* Другими словами для функций (а [not_DP] является функцией) разбор
+     случаев делается для типа результата функции *)
+
+  (* Если у нас есть
+     [(P -> False) -> Q]
+     то, если мы докажем [False], то мы докажем что угодно (и [Q] в том числе),
+     тк [False -> P] означает типа "дай мне нечто, что нельзя сконструировать и
+     я сконструирую тебе что угодно".
+
+     Поэтому если сделать [case.] для такой цели [(P -> False) -> Q], то Coq нас
+     сразу просит доказать только [P], тк доказав это вот [P] мы "автоматически докажем"
+     вообще что угодно *)
+
   case: not_DP.
+
   exists y.
   move=> py x.
   move: not_Py.
@@ -52,18 +78,67 @@ Qed.
 
 Section Arithmetics.
 
+Lemma subn_leq0 n m :
+  minn n m = n -> n - m = 0.
+Proof.
+  Search "minn".
+  (* minnC : minn x y = minn y x *)
+
+  rewrite minnC.
+  rewrite minnE.
+  move=> <-.
+  (* n - (n - m) - m = 0 *)
+
+  Search "subn".
+  (* subn0  : x - 0 = x *)
+  (* subnn  : x - x = 0 *)
+  (* subnDA : n - (m + p) = n - m - p *)
+  (* subnAC : x - y - z = x - z - y *)
+
+  Search "addn".
+
+  rewrite -subnDA.
+  rewrite addnC.
+  rewrite subnDA.
+  rewrite subnn.
+  rewrite sub0n.
+  done.
+Qed.
+
 Lemma min_plus_r  n m p  :
   minn n m = n -> minn n (m + p) = n.
 Proof.
-  (* move=> H. *)
-  (* do 2! rewrite -H. *)
-  Search "minn".
-Admitted.
+  move/subn_leq0.
+  move=> H.
+  rewrite minnE.
+  rewrite addnC.
+  rewrite subnDA.
+  rewrite subnAC.
+  rewrite H.
+  rewrite sub0n.
+  by rewrite subn0.
+Qed.
 
 Lemma min_plus_minus m n p :
   minn n m + minn (n - m) p = minn n (m + p).
 Proof.
-Admitted.
+  Search "minn".
+
+  (* minnC     commutative minn       minn x y = minn y x
+     minnA     associative minn       minn x (minn y z) = minn (minn x y) z
+     minnCA    left_commutative minn  minn x (minn y z) = minn y (minn x z)
+  *)
+
+  Eval hnf in commutative minn.
+  Eval hnf in associative minn.
+  Eval hnf in left_commutative minn.
+
+  rewrite [in minn (n - m) p]minnC.
+  rewrite !minnE.
+  rewrite subnDA.
+  rewrite -minnE.
+  rewrite addnC.
+Qed.
 
 Fixpoint zero (n : nat) : nat :=
   if n is n'.+1 then zero n'

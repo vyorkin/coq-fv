@@ -30,4 +30,27 @@ Proof.
   by move=> [] [] AorB; apply/orP; move/orP : AorB.
 Qed.
 
+Lemma foo A (P : A -> Prop) :
+  forall x, P x -> exists y, P y.
+Proof.
+  move=> x px.
+  exact: (ex_intro P x px).
+  Undo.
+  exists x.
+  exact: px.
+Qed.
+
+Lemma bar (P : Prop) :
+  P -> (True -> bool) -> P.
+Proof.
+  move=> evP.
+
+  (* Для функций  разбор случаев делается для типа результата функции: *)
+  case.
+
+  - exact: I.
+  - exact: evP.
+  exact: evP.
+Abort.
+
 End Playground3.
