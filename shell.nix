@@ -9,5 +9,7 @@ pkgs.mkShell {
     mathcomp-ssreflect
     mathcomp-analysis
     QuickChick
+    equations
+    # coq-typing-flags
   ]);
 }

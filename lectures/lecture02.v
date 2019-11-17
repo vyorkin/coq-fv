@@ -291,8 +291,7 @@ Module Lect2.
     который конструирует значение типа [eq] и он накладывает
     очень важное ограничение -- параметр типа и
     его индекс должны совпадать, а иначе тип не сконструируешь.
-    Это похоже на хаскельные GADTs.
-    *)
+    Это похоже на хаскельные GADTs. *)
 
     (* Например, вот такой тип есть *)
     Check @eq bool false true.
@@ -304,7 +303,7 @@ Module Lect2.
     Check @eq nat 1 1.
     Check eq_refl 1 : @eq nat 1 1.
     Check eq_refl 2 : eq 2 2.
-    (* Первый параметр типа неявный, а второй (число) явный. *)
+    (* Первый параметр типа неявный, а второй явный. *)
     Fail Check eq_refl 1 : eq 1 2.
     (* ^^ The term [eq_refl 1] as type [eq 1 1] while
            it is expected to have type [eq 1 2] *)
@@ -323,7 +322,7 @@ Module Lect2.
       fun proof_x_eq_y =>
         match proof_x_eq_y with
         | (* x = y *) eq_refl => (* y := x *) eq_refl x
-     (* |             eq_refl =>             eq_refl x : eq x x *)
+     (* |             eq_refl =>              eq_refl x : eq x x *)
         end.
 
     (* Experiments *)
@@ -392,10 +391,8 @@ Module Lect2.
       by [].
     Qed.
 
-    (*
-    Язык тактик можно применять, чтобы писать код.
-    Код и доказательства это одно и тоже.
-    *)
+    (* Язык тактик можно применять, чтобы писать код.
+       Код и доказательства это одно и тоже. *)
 
     Lemma or_and_distr' A B C :
       (A \/ B) /\ C -> A /\ C \/ B /\ C.

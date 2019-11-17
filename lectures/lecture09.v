@@ -11,6 +11,9 @@ Lemma sig_exists A (P : A -> Prop) :
 Proof.
 case=> x px.
 by exists x.
+Undo.
+exists x.
+exact: px.
 Qed.
 
 Definition exists_sig A (P : A -> Prop) :

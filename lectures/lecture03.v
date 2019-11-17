@@ -320,14 +320,22 @@ Module Lect3.
     False -> forall P : Prop, P.
   Proof. by []. Qed.
 
+  (* Импликация это ф-ция, которая принимает [f : False] и
+     производит некоторую ф-цию, которая принимает
+     произвольное утверждение [P] и производит его доказательство. *)
   Definition exfalso_quodlibet_term :
     False -> forall P : Prop, P :=
-    fun f => match f with end.
+    fun f =>
+      (* Поскольку [False] это индуктивный тип, то
+         по его значениям можно паттерн-матчить.
+         А конструкторов у нас 0, столько и запишем :) *)
+      match f with end.
 
+  (* Частный случай *)
   Lemma False_implies_false :
     False -> false.
-  (* Check false : Type. *)
-  (* Print false. *)
+  Check false : Type.
+  Print false.
   Set Printing Coercions.
   (* Set Printing All. *)
   rewrite /is_true.
@@ -370,14 +378,23 @@ Module Lect3.
 
   Check I : True.
 
-  (* What's going on here? Let's write a proof term *)
+  (* Чтобы разобраться что происходит под капотом,
+     можно построить следующий пруф-терм: *)
   Definition false_implies_False_term :
     false -> False :=
-    fun eq : false =>
+ (* Раскроем коэрцию: *)
+ (* fun eq : false         => *)
+ (* fun eq : is_true false => *)
+    fun eq : false = true  =>
+      (* тут false не меняется, а true меняется (тк это индекс) *)
       (* [in] это по сути [:],
          т.е. это нужно читать как [eq : eq _ b]*)
       match eq in (_ = b)
             return (if b then False else True)
+      (* до паттерн-матчинга:
+            return True *)
+      (* после паттерн-матчинга:
+            return False *)
       with
       | erefl => I : True
       end.
@@ -441,9 +458,9 @@ Module Lect3.
 
       move=> x y z.
       (* Есть такая эвристика, что если ф-ция определена рекурсивно по
-         1-му аргументу, то идукцию сдедует тоже делать по 1-му аргументу.
+         1-му аргументу, то идукцию следует тоже делать по 1-му аргументу.
 
-         Индукция это некоторое символическое вычисление. *)
+         Индукция есть в некотором смысле символическое вычисление. *)
 
       elim: x.
       - by [].
