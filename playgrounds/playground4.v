@@ -22,20 +22,18 @@ Module Playground4.
   Compute \sum_ (1 <= i < 5) i.
   (*                      F -^ *)
 
-  (* Fixpoint all_words (n : nat) (l : seq nat) : seq (seq nat) := *)
-  (*   if l is h :: tl then *)
-  (*     if n is i.+1 then *)
-  (*       [seq h :: w | w <- all_words i l] *)
-  (*     else *)
-  (*       [:: l] *)
-  (*   else *)
-  (*     [::]. *)
+  Fixpoint all_words (T : Type) (n : nat) (xs : seq T) :=
+    if n is m.+1 then
+      flatten [seq [seq x :: w | w <- (all_words m xs)] | x <- xs]
+    else
+      [:: nil; nil].
+
+  Compute (all_words 2 [:: 1; 2; 3]).
 
   (*  [:: [:: 1; 1]; [:: 1; 2]; [:: 1; 3];
           [:: 2; 1]; [:: 2; 2]; [:: 2; 3];
           [:: 3; 1]; [:: 3; 2]; [:: 3; 3]
       ] *)
 
-  (* Compute (all_words 2 [:: 1; 2; 3]). *)
 
 End Playground4.
