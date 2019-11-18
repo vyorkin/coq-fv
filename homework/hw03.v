@@ -9,17 +9,6 @@ Section Classical_reasoning.
 (** We assert the classical principle of double negation elimination *)
 Variable DNE : forall A : Prop, ~ ~ A -> A.
 
-(* Evgeny Dashkov, [13.10.19 21:26]
-   Может быть технически проще ввести дизъюнкцию
-
-   (exists x, ~P x) \/ ~(exists x, ~P x)
-
-   - либо    существует такой [x] для которого [P x] не верно
-   - либо НЕ существует такой [x] для которого [P x] не верно
-
-   А затем протащить отрицание под
-   существование (интуиционизм) и снять его там по DNE. *)
-
 (* https://en.wikipedia.org/wiki/Drinker_paradox *)
 Lemma drinker_paradox (P : nat -> Prop) :
   exists x, P x -> forall y, P y.
@@ -61,6 +50,9 @@ Proof.
 
   case: not_DP.
 
+  (* В формулировке теорем exists - нотация,
+     в доказательствах -- тактика, похожая на split *)
+
   exists y.
   move=> py x.
   move: not_Py.
@@ -75,6 +67,29 @@ Proof.
   case: not_DP.
   by exists y => /nPy.
 Qed.
+
+Lemma inhabited_exists A :
+  (exists x : A, True) <-> inhabited A.
+Proof.
+  by split; case.
+Qed.
+
+(** Bonus: here is a bit more general formulation of the above lemma,
+    we don't have to have predicates over [nat]s, having an inhabited type is enough *)
+Lemma drinker_paradox' (A : Type) (P : A -> Prop) :
+  inhabited A ->
+  exists x, P x -> forall y, P y.
+Proof.
+apply: DNE => not_DP; apply/not_DP.
+case=> a; exists a=> _ y.
+apply: DNE => nPy; apply/nPy.
+case: not_DP.
+by exists y => /nPy.
+Qed.
+
+(* This closes the section, discharging over DNE *)
+End Classical_reasoning.
+Check drinker_paradox.
 
 Section Arithmetics.
 
@@ -103,6 +118,22 @@ Proof.
   rewrite subnn.
   rewrite sub0n.
   done.
+
+  Restart.
+
+  move=> min.
+  About maxnE. (* maxn m n = m + (n - m) *)
+  (* we need injectivity of addition here *)
+  Search _ addn "I".
+  Eval hnf in (injective (addn _)).
+  (* ?n + x1 = ?n + x2 -> x1 = x2 *)
+  apply: (@addnI m).
+  rewrite -maxnE.
+  rewrite addn0.
+  rewrite -min.
+  Search _ maxn minn.
+  rewrite minKn.
+  by [].
 Qed.
 
 Lemma min_plus_r  n m p  :
@@ -124,9 +155,9 @@ Lemma min_plus_minus m n p :
 Proof.
   Search "minn".
 
-  (* minnC     commutative minn       minn x y = minn y x
-     minnA     associative minn       minn x (minn y z) = minn (minn x y) z
-     minnCA    left_commutative minn  minn x (minn y z) = minn y (minn x z)
+  (* minnC  commutative minn       minn x y = minn y x
+     minnA  associative minn       minn x (minn y z) = minn (minn x y) z
+     minnCA left_commutative minn  minn x (minn y z) = minn y (minn x z)
   *)
 
   Eval hnf in commutative minn.
@@ -138,6 +169,48 @@ Proof.
   rewrite subnDA.
   rewrite -minnE.
   rewrite addnC.
+
+  (* Ну... я пытался! *)
+
+  Restart.
+
+  (* Решение Антона: *)
+
+  Search _ ((?m <= ?n) || (?n <= ?m)).
+  move: (leq_total m n).
+  Search _ (_ || _) (_ \/ _).
+  move/Bool.orb_prop.  (* vanilla Coq, the idiomatic approach would be move/orP *)
+  case.
+  - move=> le_mn.
+    rewrite minnE.
+    rewrite -{1}(subnKC le_mn).
+    rewrite -{2}(add0n (n-m)).
+    rewrite subnDr.
+    rewrite subn0.
+    rewrite addn_minr.
+    rewrite subnKC.
+    + done.
+    done.
+  - move/minn_idPl.
+    move=> min.
+    move: (min).
+    move/subn_leq0.
+    move=>->.
+    rewrite min0n.
+    rewrite addn0.
+    rewrite min.
+    move: min.
+    by move/min_plus_r->.
+
+Restart.
+
+case: (leqP m n) => [le_mn | /ltnW/minn_idPl min_n].
+- rewrite minnE.
+  rewrite -{1}(subnKC le_mn) -{2}(add0n (n-m)) subnDr subn0.
+  by rewrite addn_minr subnKC.
+- move: (min_n)=> /subn_leq0 ->.
+  rewrite min0n addn0 min_n.
+  by rewrite min_plus_r.
 Qed.
 
 Fixpoint zero (n : nat) : nat :=
@@ -146,8 +219,7 @@ Fixpoint zero (n : nat) : nat :=
 
 Lemma zero_returns_zero n :
   zero n = 0.
-Proof.
-Admitted.
+Proof. by elim: n. Qed.
 
 (**
 Claim: every amount of postage that is at least 12 cents can be made
@@ -155,7 +227,20 @@ Claim: every amount of postage that is at least 12 cents can be made
 (** Hint: no need to use induction here *)
 Lemma stamps n : 12 <= n -> exists s4 s5, s4 * 4 + s5 * 5 = n.
 Proof.
-Admitted.
+  About leq_div2r.
+
+  move=> /leq_div2r leq12n.
+  exists (n %/4 - n %% 4), (n %% 4).
+
+  (* mulnBl   : (x - y) * z = x * z - y * z *)
+  (* addnABC  : p <= m -> p <= n -> m + (n - p) = m - p + n. *)
+  (* leq_mul  : m1 <= n1 -> m2 <= n2 -> m1 * m2 <= n1 * n2. *)
+  (* ltnS     : (m < n.+1) = (m <= n). *)
+  (* ltn_pmod : 0 < d -> m %% d < d. *)
+
+  rewrite mulnBl -addnABC -?mulnBr ?muln1 ?leq_mul -?divn_eq //.
+  by rewrite (leq_trans _ (leq12n 4)) // -ltnS ltn_pmod.
+Qed.
 
 End Arithmetics.
 

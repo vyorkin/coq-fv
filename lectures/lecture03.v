@@ -218,7 +218,6 @@ Module Lect3.
     (* В Coq уже есть [ex], определение выше нужно было просто,
        чтобы посмотреть как оно устроено под капотом. *)
 
-
     (** Simplified notation *)
     Notation "’exists’ x : A , p" :=
       (ex (fun x : A => p))

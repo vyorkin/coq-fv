@@ -4,6 +4,9 @@ From mathcomp Require Import ssreflect ssrfun ssrbool ssrnat.
 Set Implicit Arguments.
 
 Module Playground2.
+
+  Locate "<=".
+
   Section Symmetric_Conjunction_Disjunction.
     Lemma andb_sym : forall A B : bool, A && B -> B && A.
     Proof.
