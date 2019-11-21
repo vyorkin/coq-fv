@@ -36,8 +36,8 @@ Qed.
 
 Lemma p_imp_np_iff_np :
   (* Which is equivalent to:
-  ((A -> (A -> False)) -> (A -> False))        /\
-  ((A -> False)        -> (A -> (A -> False)))
+    ((A -> (A -> False)) -> (A -> False))        /\
+    ((A -> False)        -> (A -> (A -> False)))
   *)
   (A -> ~A) <-> ~A.
 Proof.

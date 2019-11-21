@@ -316,6 +316,9 @@ Module Lect2.
    (* x = x := eq_refl x. *)
       eq x x := eq_refl x.
 
+    (* Inductive eq (A : Type) (a : A) : A -> Prop := *)
+    (* | eq_refl : eq A a a. *)
+
     Definition eq_sym A (x y : A) :
     (* x = y -> y = x := *)
       eq x y -> eq y x :=

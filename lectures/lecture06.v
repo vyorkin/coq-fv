@@ -21,6 +21,13 @@ Variant alt_spec (P : Prop) (b : bool) : bool -> Type :=
 Lemma altP P b :
   reflect P b -> alt_spec P b b.
 Proof.
+  case : b /.
+  Undo.
+
+  by case : b /; constructor.
+
+  Restart.
+
   move=> Pb.
   case: b / Pb.
   constructor.
@@ -28,6 +35,18 @@ Proof.
   Restart.
 by move=> Pb; case: b / Pb; constructor.
 Qed.
+
+Lemma example1 x y :
+    x = y -> y + x + y = x + x + x.
+Proof.
+  move=> x_eq_y.
+  (* case: индексы-для-переписывания / индексированный-тип *)
+  Show Proof.
+  case: {1}y   / x_eq_y. Show Proof. Undo.
+  case: {2}y   / x_eq_y. Show Proof. Undo.
+
+  (* case: {1 2}y / x_eq_y. *)
+Abort.
 
 (** We'll see how to use [altP] later, but let's
     see yet another example of case analysis on
@@ -54,7 +73,7 @@ Qed.
 (** A spec for boolean equality *)
 Variant eq_xor_neq (T : eqType) (x y : T) :
   bool -> bool -> Set :=
-  | EqNotNeq of x = y  : eq_xor_neq x y true  true
+  | EqNotNeq of x  = y : eq_xor_neq x y true  true
   | NeqNotEq of x != y : eq_xor_neq x y false false.
 
 Lemma eqVneq (T : eqType) (x y : T) :
@@ -63,8 +82,14 @@ Proof.
 rewrite eq_sym.
 
 (* 2nd goal: propositional inequality *)
+(* eqP : forall (T : eqType) (x y : T), reflect (x = y) (x == y) *)
 case: eqP.
-Undo.
+(* Locate "<>". Locate "!=". *)
+- by constructor.
+
+Restart.
+
+rewrite eq_sym.
 (* 2nd goal: boolean inequality *)
 case: (altP eqP).
 - by constructor.

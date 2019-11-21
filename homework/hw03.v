@@ -14,17 +14,17 @@ Lemma drinker_paradox (P : nat -> Prop) :
   exists x, P x -> forall y, P y.
 Proof.
   apply: DNE.
-  rewrite /not.
+  (* rewrite /not. *)
   move=> not_DP.
   apply: (not_DP).
 
-  exists 0.
+  exists 0. (* Выберем произвольного человека *)
   Undo.
   apply: (ex_intro _ 0).
 
   move=> evP0 y.
   apply: DNE.
-  rewrite /not.
+  (* rewrite /not. *)
   move=> not_Py.
   apply: (not_Py).
 
@@ -38,17 +38,20 @@ Proof.
   (* Другими словами для функций (а [not_DP] является функцией) разбор
      случаев делается для типа результата функции *)
 
-  (* Если у нас есть
-     [(P -> False) -> Q]
-     то, если мы докажем [False], то мы докажем что угодно (и [Q] в том числе),
-     тк [False -> P] означает типа "дай мне нечто, что нельзя сконструировать и
-     я сконструирую тебе что угодно".
+  (* Если у нас есть [(P -> False) -> Q] то, если мы докажем [False],
+     то мы докажем что угодно (и [Q] в том числе), тк
+     [False -> P] означает типа "дай мне нечто, что
+     нельзя сконструировать и я сконструирую тебе что угодно".
 
      Поэтому если сделать [case.] для такой цели [(P -> False) -> Q], то Coq нас
      сразу просит доказать только [P], тк доказав это вот [P] мы "автоматически докажем"
      вообще что угодно *)
 
   case: not_DP.
+  Undo. (* Посмотрим на это немного подробнее *)
+  move: not_DP.
+  rewrite /not. (* Получим утв. вида [(P -> False) -> Q] *)
+  case. (* Доказав [P] докажем что угодно *)
 
   (* В формулировке теорем exists - нотация,
      в доказательствах -- тактика, похожая на split *)
@@ -56,6 +59,8 @@ Proof.
   exists y.
   move=> py x.
   move: not_Py.
+  rewrite /not.
+  (* Аналогично, видим [(P -> False) -> Q] *)
   case.
   exact: py.
 
@@ -227,10 +232,24 @@ Claim: every amount of postage that is at least 12 cents can be made
 (** Hint: no need to use induction here *)
 Lemma stamps n : 12 <= n -> exists s4 s5, s4 * 4 + s5 * 5 = n.
 Proof.
-  About leq_div2r.
+  (* Locate "%/". *)
+  (* About divn. *)
+
+  (* leq_div2r : forall d m n : nat, m <= n -> m %/ d <= n %/ d *)
+  move/leq_div2r.
+  move=> leq12n.
+  Undo 2.
 
   move=> /leq_div2r leq12n.
-  exists (n %/4 - n %% 4), (n %% 4).
+
+  (* Locate "%%". *)
+  (* About modn. *)
+
+  (* Можно набрать сколько возможно монетами по 4 цента,
+     а потом остальное монетами по 5 (это грубоватое объяснение идеи) *)
+
+  exists (n %/ 4 - n %% 4). (* Сколько-то целых 4-центовых монет минус остаток *)
+  exists (n %% 4).          (* Остаток 5-центовыми *)
 
   (* mulnBl   : (x - y) * z = x * z - y * z *)
   (* addnABC  : p <= m -> p <= n -> m + (n - p) = m - p + n. *)
@@ -296,11 +315,20 @@ Definition surjective (f : A -> B) :=
 (** This is a category-theoretical counterpart of surjectivity:
     https://en.wikipedia.org/wiki/Epimorphism *)
 Definition epic (f : A -> B) :=
+(* Эпиморфи́зм в категории ― морфизм m : A → B,
+   такой что из всякого равенства f ∘ m = h ∘ m следует f = h.
+   Другими словами, на m можно сокращать справа. *)
   forall C (g1 g2 : B -> C), g1 \o f =1 g2 \o f -> g1 =1 g2.
 
 Lemma surj_epic f : surjective f -> epic f.
 Proof.
-Admitted.
+  rewrite /surjective /epic /eqfun.
+  (* "=1" : eqfun : forall A B : Type, (B -> A) -> (B -> A) -> Prop *)
+  About eq_compr.
+  About compA.
+  About eq_idr.
+  case=> g H_id.
+Qed.
 
 Lemma epic_surj f : epic f -> surjective f.
   (** Why is this not provable? *)
