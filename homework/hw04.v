@@ -276,7 +276,30 @@ Fixpoint compile (e : expr) : prog :=
 Lemma run_append p1 p2 s :
   run (p1 ++ p2) s = run p2 (run p1 s).
 Proof.
-Admitted.
+  elim: p2 p1=> [|i p IHp1] p1.
+  - by rewrite cats0.
+  (* IHp1 : forall p1 : seq instr, run (p1 ++ p) s = run p (run p1 s) *)
+  (* run (p1 ++ i :: p) s = run (i :: p) (run p1 s) *)
+  Search "cat" in seq.
+  rewrite -cat_rcons.
+  rewrite -cats1.
+  rewrite IHp1.
+  (* run p (run (p1 ++ [:: i]) s) = run (i :: p) (run p1 s) *)
+  (* rewrite cats1. *)
+  (* run p (run (rcons p1 i) s) = run (i :: p) (run p1 s) *)
+  Search "cons" in seq.
+
+  Restart.
+
+  elim: p1 p2 s => //.
+  move=> i l H s s0 /=.
+  rewrite -H.
+  done.
+
+  Restart.
+
+  elim: p1 s => //=.
+Qed.
 
 Lemma compile_correct_generalized e s :
   run (compile e) s = (eval_expr e) :: s.
