@@ -34,7 +34,8 @@ Proof.
   Undo.
 
   (* Тоже самое можно сделать следующим образом *)
-  move: n k. elim.
+  move: n k.
+  elim.
   - move=> k.
     rewrite /factorial_mul.
     Print fact0.

@@ -181,12 +181,44 @@ Definition eval_expr_iter e := eval_expr_iter' e 0.
 Lemma eval_expr_iter'_correct e acc :
   eval_expr_iter' e acc = acc + eval_expr e.
 Proof.
-Admitted.
+  (* В посылках будут 2 гипотезы индукции,
+     по одной для каждого параметры конструктора
+     [Plus e1 e2] из определения [eval_expr_iter'] *)
+  elim: e acc.
+  move=> n acc.
+  move=> /=.
+  - by rewrite addnC.
+  move=> e1 IH1 e2 IH2 acc.
+  move=> /=.
+  rewrite addnA.
+  rewrite IH1.
+  rewrite IH2.
+  done.
+
+  Restart.
+
+  elim: e acc=> [n | e1 IH1 e2 IH2 /=] acc.
+  - by rewrite addnC.
+  rewrite addnA.
+  rewrite IH1.
+  rewrite IH2.
+  done.
+
+  Restart.
+  elim: e acc=> [n | e1 IH1 e2 IH2 /=] acc; first by rewrite addnC.
+  by rewrite IH1 IH2 addnA.
+Qed.
+
+(* В intro-паттернах пока нельзя сразу же переписывать с
+   использованием уже ранее доказанных лемм, но скоро будет
+   можно, используя новые паттерны, которые в Coq 8.10
+   добавили. Гипотезой индукции можно переписывать сразу же,
+   как и всем, что будет лежать в стеке-цели *)
+
 
 Theorem eval_expr_iter_correct e :
   eval_expr_iter e = eval_expr e.
-Proof.
-Admitted.
+Proof. exact: eval_expr_iter'_correct. Qed.
 
 Fixpoint eval_expr_cont' {A} (e : expr) (k : nat -> A) : A :=
   match e with
@@ -201,14 +233,23 @@ Definition eval_expr_cont (e : expr) : nat :=
 Lemma eval_expr_cont'_correct A e (k : nat -> A) :
   eval_expr_cont' e k = k (eval_expr e).
 Proof.
-Admitted.
+  elim: e k=> //=.
+  move=> e1 IH1 e2 IH2 k.
+  rewrite IH2.
+  rewrite IH1.
+  done.
+
+  Restart.
+  by elim: e k=> [|e1 IH1 e2 IH2] k //=; rewrite IH2 IH1.
+Qed.
 
 Theorem eval_expr_cont_correct e :
   eval_expr_cont e = eval_expr e.
-Proof.
-Admitted.
+Proof. exact: eval_expr_cont'_correct. Qed.
 
-Inductive instr := Push (n : nat) | Add.
+Inductive instr :=
+| Push (n : nat)
+| Add.
 
 Definition prog := seq instr.
 
