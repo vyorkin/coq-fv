@@ -61,6 +61,7 @@ Fixpoint sorted' s : bool :=
 Lemma sorted_cons' e s :
   sorted' (e :: s) -> sorted' s.
 Proof.
+  elim: s=> [|x s IHs] //.
 Admitted.
 
 (** So instead we are going to use Mathcomp's
@@ -89,6 +90,8 @@ fix path (x : T) (p : seq T) {struct p} : bool :=
     is much easier to prove (exercise): *)
 Lemma sorted_cons e s :
   sorted leT (e :: s) -> sorted leT s.
+  (* rewrite /sorted. *)
+  (* elim: s=> [|x s IHs] H //=. *)
 Admitted.
 
 
@@ -206,12 +209,26 @@ Variable A : Type.
 
 Inductive perm : seq A -> seq A -> Prop :=
 | permutation_nil : perm [::] [::]
+  (* Если [v1] и [v2] перестановки, то
+     и [a :: v1] и [a :: v2] тоже перестановки *)
 | permutation_skip a v1 v2 of
     perm v1 v2 : perm (a :: v1) (a :: v2)
 | permutation_swap a b v1 v2 of
     perm v1 v2 : perm [:: a, b & v1] [:: b, a & v2]
 | permutation_trans v1 v2 v3 of
     perm v1 v2 & perm v2 v3 : perm v1 v3.
+
+Inductive le : nat -> nat -> Prop :=
+  | le0 n : le 0 n
+  | leS m n : le m n -> le m.+1 n.+1.
+
+Definition le_3_4 : le 3 4 := leS (leS (leS (le0 1))).
+
+Inductive le' : nat -> nat -> Prop :=
+  | le_refl n : le' n n
+  | leSr m n : le' m n -> le' m n.+1.
+
+(* Definition le_3_4' := leSr (le_refl _). *)
 
 (**
 The pros of this definition:
@@ -234,11 +251,17 @@ move=> v1 v2; elim=> [*|*|*|].
 - exact: permutation_swap.
 move=> ??? _ P21 _ P32.
 apply: permutation_trans P32 P21.
-Qed.
+
 
 (** Exercise: try proving [pperm_sym]
     by induction a list.
  *)
+(* Restart. *)
+(* suff {v1 v2} L : forall v1 v2, *)
+(*   perm v1 v2 -> perm v2 v1 by split; apply: L. *)
+(* elim. *)
+
+Qed.
 End InductivePermutations.
 
 
@@ -255,19 +278,6 @@ can be expressed semi-formally as follows
     insertion sort algorithm we implemented *)
 
 (** * The output is sorted *)
-
-
-Print path.
-(**
-path =
-fun (T : Type) (e : rel T) =>
-fix path (x : T) (p : seq T) {struct p} : bool :=
-  if p is (y :: p') then
-     e x y && path y p'
-  else true
-     : forall T : Type, rel T -> T -> seq T -> bool
-
-*)
 
 (* Local Notation sorted := (sorted leT). *)
 
@@ -401,6 +411,7 @@ all [pred x | count_mem x s1 == count_mem x s2]
 
 Lemma perm_sort s : perm_eql (sort leT s) s.
 Proof.
+Search _ (perm_eq ?s1 =1 perm_eq ?s2).
 apply/permPl/permP.
 elim: s=> //= x s IHs.
 move=> p.

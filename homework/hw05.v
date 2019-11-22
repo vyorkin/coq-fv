@@ -8,7 +8,7 @@ Section BooleanReflection.
 
 (** A spec for boolean equality *)
 Variant eq_xor_neq (T : eqType) (x y : T) : bool -> bool -> Set :=
-  | EqNotNeq of x = y : eq_xor_neq x y true true
+  | EqNotNeq of x = y  : eq_xor_neq x y true  true
   | NeqNotEq of x != y : eq_xor_neq x y false false.
 
 Print eq_op.

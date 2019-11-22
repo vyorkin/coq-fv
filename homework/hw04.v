@@ -25,13 +25,26 @@ Definition sum_iter (l : seq nat) : nat :=
 Lemma sum_iter'_correct l x0 :
   sum_iter' l x0 = x0 + sum l.
 Proof.
-Admitted.
+  move: x0.
+  elim: l=> [|x xs] //= IH_x0 x0.
+  - rewrite addnCA.
+    rewrite IH_x0.
+    rewrite addnA.
+    done.
+
+  Restart.
+
+  elim: l x0=> [|x xs] //= IH_x0 x0.
+  by rewrite addnCA IH_x0 addnA.
+Qed.
 
 Theorem sum_iter_correct l :
   sum_iter l = sum l.
 Proof.
-Admitted.
-
+  elim: l=>// l.
+  rewrite /sum_iter /= addn0=> l0 H.
+  by rewrite sum_iter'_correct.
+Qed.
 
 (** Continuation-passing style
     https://en.wikipedia.org/wiki/Continuation-passing_style
@@ -46,44 +59,106 @@ Definition sum_cont (l : seq nat) : nat :=
 Lemma sum_cont'_correct A l (k : nat -> A) :
   sum_cont' l k = k (sum l).
 Proof.
-Admitted.
+  by elim: l k=> //= x l H k; rewrite H.
+Qed.
 
 Theorem sum_cont_correct l :
   sum_cont l = sum l.
 Proof.
-Admitted.
+  elim: l=> // l.
+  rewrite /sum_cont=> l0 H.
+  by rewrite sum_cont'_correct.
+Qed.
 
 Fixpoint rev_rec {A : Type} (xs : seq A) : seq A :=
   if xs is (x :: xs') then
     rev_rec xs' ++ [:: x]
   else xs.
 
+About catrev.
+
 Lemma rev_correct A (l1 l2 : seq A) :
   catrev l1 l2 = rev_rec l1 ++ l2.
 Proof.
-Admitted.
+  elim: l1 l2=> //= x xs IH l.
+  rewrite IH.
+  (* Search _ "cat" in seq. *)
+  by rewrite -catA cat1s.
+Qed.
 
 Theorem rev_iter_correct A (l : seq A) :
   rev l = rev_rec l.
 Proof.
-Admitted.
+  elim: l=> //= l.
+  move=> l0 H.
+  Search "cat" in seq.
+  rewrite -H.
+  rewrite -cat1s.
+  Search "rev" in seq.
+  by rewrite rev_cat.
+
+  Restart.
+
+  by elim: l=> //= l l0 <-; rewrite -cat1s rev_cat.
+Qed.
 
 Fixpoint map_iter' {A B}
     (f : A -> B) (l : seq A) (acc : seq B) : seq B :=
   if l is (x :: l') then map_iter' f l' (f x :: acc)
   else rev acc.
 
-Definition map_iter {A B} (f : A -> B) l := map_iter' f l [::].
+Definition map_iter {A B} (f : A -> B) l :=
+  map_iter' f l [::].
+
+(* [rev] это просто [catrev s [::]] *)
 
 Lemma map_iter'_correct A B (f : A -> B) l1 l2 :
   map_iter' f l1 l2 = rev l2 ++ (map f l1).
 Proof.
-Admitted.
+  elim: l1 l2=> //= l.
+  - by rewrite cats0.
+  move=> l0 IH_l0 l2.
+  (* map_iter' f l0 (f l :: l2) = rev l2 ++ f l :: [seq f i | i <- l0] *)
+  rewrite IH_l0.
+  clear IH_l0.
+  (* rev (f l :: l2) ++ [seq f i | i <- l0] = rev l2 ++ f l :: [seq f i | i <- l0] *)
+  Search "rev" in seq.
+  Search "map" in seq.
+  rewrite rev_cons.
+  (* rewrite -!catrevE. *)
+  (* catrev (f l :: l2) [seq f i | i <- l0] = catrev l2 (f l :: [seq f i | i <- l0]) *)
+  (* Search "catrev" in seq. *)
+
+  (* map_cat : [seq f i | i <- s1 ++ s2] = [seq f i | i <- s1] ++ [seq f i | i <- s2] *)
+
+  (* rewrite -map_rev. *)
+  (* rewrite -map_cons. *)
+  (* catrev (f l :: l2) [seq f i | i <- l0] = catrev l2 [seq f i | i <- l :: l0] *)
+
+  (* map_iter' f l0 (f l :: l2) = catrev l2 (f l :: [seq f i | i <- l0]) *)
+  (* Search "catrev" in seq. *)
+
+  (* map_rev : [seq f i | i <- rev s] = rev [seq f i | i <- s] *)
+
+  Restart.
+
+  elim: l1 l2=> [|x1 l1 IHl1 /=] l2.
+  - by rewrite cats0.
+    rewrite IHl1.
+    rewrite rev_cons.
+    (* Хех, a я был близок... До [-cats1] не додумался! *)
+    (* cats1 : s ++ [:: z] = rcons s z. *)
+    rewrite -cats1.
+    (* catA  : s1 ++ s2 ++ s3 = (s1 ++ s2) ++ s3. *)
+    rewrite -catA /=.
+    done.
+Qed.
 
 Theorem map_iter_correct A B (f : A -> B) l :
   map_iter f l = map f l.
 Proof.
-Admitted.
+  exact: map_iter'_correct.
+Qed.
 
 Inductive expr : Type :=
 | Const of nat
