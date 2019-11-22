@@ -71,8 +71,8 @@ Lemma ex1_lia (m n : nat) : ~ (3 * (m.+1) + 5 * (n.+1) = 12).
 Proof.
   case: m.
   case: n=> // n.
-  lia.
-Qed.
+  (* lia. *)
+Abort.
 
 Lemma ex1 (m n : nat) : ~ (3 * (m.+1) + 5 * (n.+1) = 12).
 Proof.

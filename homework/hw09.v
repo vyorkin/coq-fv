@@ -9,7 +9,6 @@ Lemma bij_card_eq (T T' : finType) (f : T -> T') :
 Proof.
 Admitted.
 
-
 Section bool_irrelevance.
 
 Implicit Types b c : bool.
