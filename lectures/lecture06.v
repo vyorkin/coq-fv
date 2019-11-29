@@ -21,7 +21,12 @@ Variant alt_spec (P : Prop) (b : bool) : bool -> Type :=
 Lemma altP P b :
   reflect P b -> alt_spec P b b.
 Proof.
+  (* Это синтаксис для анализа по случаям для
+     семейства типов (индексированного типа). *)
   case : b /.
+  (* case: индексы-для-переписывания / индексированный-тип
+     Если <индексированный-тип> не задан,
+     то как обычно разбирается голова цели *)
   Undo.
 
   by case : b /; constructor.
@@ -29,13 +34,29 @@ Proof.
   Restart.
 
   move=> Pb.
+  (* Тоже самое, что и выше, только в данном случае
+     мы явно указываем индексированный тип из контекста *)
   case: b / Pb.
+  (* Видим, что индексы переписались в цели *)
+  - (* Выбирается [AltTrue] *)
+    constructor.
+    exact: p.
+  (* Выбирается [AltFalse] *)
   constructor.
+  (* Фактически нам [~ P] не нужно уже,
+     тк переписывание выбором конструктора вот этой вот
+     альтернативной спецификации привело нашу цель к [~~false].
+     Это может быть удобно в слуаях вроде [eqVneq] (см ниже) *)
+  rewrite /negb.
+  done.
 
   Restart.
-by move=> Pb; case: b / Pb; constructor.
+
+  by move=> Pb; case: b / Pb; constructor.
 Qed.
 
+(* Ещё пример, на котором мб проще понять
+   новый синтаксис с [case b / Pb] *)
 Lemma example1 x y :
     x = y -> y + x + y = x + x + x.
 Proof.
@@ -57,14 +78,20 @@ Lemma sym T (x y : T) :
 Proof.
 move=> H.
 case: H.  (* Does not work *)
+
 (* В такой форме нам не нужно указывать имя гипотезы,
    по которой мы хотим сделать паттерн-матчинг. *)
 case: y /.
 Undo.
+
 (* Можно сделать то же самое и в более явной форме. *)
 move=> x_eq_y.
 (* Тут [y] это указание на то, что меняется (на индекс) *)
 case: y /x_eq_y.
+Undo.
+
+(* Coq может вывести этот индекс самостоятельно *)
+case: _ /x_eq_y.
 done.
 Qed.
 
@@ -84,15 +111,26 @@ rewrite eq_sym.
 (* 2nd goal: propositional inequality *)
 (* eqP : forall (T : eqType) (x y : T), reflect (x = y) (x == y) *)
 case: eqP.
-(* Locate "<>". Locate "!=". *)
-- by constructor.
 
+(* [x == y] переписался в одном случае
+   на [true] и в другом случае на [false] *)
+
+- by constructor.
+  (* Во 2-ой цели у нас в предпосылке пропозиционное неравенство [<>] *)
+  (* x <> y -> eq_xor_neq x y false false *)
+  Locate "<>". (* not (eq x y ) *)
+  Locate "!=". (* negb (eq_op (x : T) (y : T))) *)
+
+  (* Нужно привести это к [negb] *)
 Restart.
 
 rewrite eq_sym.
 (* 2nd goal: boolean inequality *)
 case: (altP eqP).
+(* altP : forall (P : Prop) (b : bool), reflect P b -> alt_spec P b b *)
+(* eqP  : forall (T : eqType) (x y : T), reflect (x = y) (x == y) *)
 - by constructor.
+(* Теперь вторую цель можно доказать просто выбором конструктора *)
 by constructor.
 Qed.
 

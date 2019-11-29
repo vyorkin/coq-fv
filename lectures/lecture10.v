@@ -51,18 +51,15 @@ Fail Fixpoint sorted' s : bool :=
   else true.
 
 Fixpoint sorted' s : bool :=
-  if s is x1 :: (x2 :: s' as tail) then
+  if s is x1 :: ((x2 :: s') as tail) then
     leT x1 x2 && (sorted' tail)
   else true.
 
 (** The obvious definition we came up with is not
-    very easy to work with. For instance, try proving
-    this obvious helper lemma (exercise) *)
-Lemma sorted_cons' e s :
-  sorted' (e :: s) -> sorted' s.
-Proof.
-  elim: s=> [|x s IHs] //.
-Admitted.
+    very easy to work with.
+    We would see it later when trying to prove
+    that [insert] function preserves sortedness. *)
+
 
 (** So instead we are going to use Mathcomp's
     [sorted] predicate, which is based on the notion
@@ -90,8 +87,6 @@ fix path (x : T) (p : seq T) {struct p} : bool :=
     is much easier to prove (exercise): *)
 Lemma sorted_cons e s :
   sorted leT (e :: s) -> sorted leT s.
-  (* rewrite /sorted. *)
-  (* elim: s=> [|x s IHs] H //=. *)
 Admitted.
 
 
@@ -176,6 +171,17 @@ fun (T : eqType) (s1 s2 : seq T) =>
   all
     [pred x | (count_mem x) s1 == (count_mem x) s2]
     (s1 ++ s2)
+
+is equivalent to
+
+  all
+    [pred x | (count_mem x) s1 == (count_mem x) s2]
+    s1
+  &&
+  all
+    [pred x | (count_mem x) s1 == (count_mem x) s2]
+    s2
+
 : forall T : eqType, seq T -> seq T -> bool
 
 where
@@ -209,8 +215,6 @@ Variable A : Type.
 
 Inductive perm : seq A -> seq A -> Prop :=
 | permutation_nil : perm [::] [::]
-  (* Если [v1] и [v2] перестановки, то
-     и [a :: v1] и [a :: v2] тоже перестановки *)
 | permutation_skip a v1 v2 of
     perm v1 v2 : perm (a :: v1) (a :: v2)
 | permutation_swap a b v1 v2 of
@@ -218,17 +222,20 @@ Inductive perm : seq A -> seq A -> Prop :=
 | permutation_trans v1 v2 v3 of
     perm v1 v2 & perm v2 v3 : perm v1 v3.
 
-Inductive le : nat -> nat -> Prop :=
-  | le0 n : le 0 n
-  | leS m n : le m n -> le m.+1 n.+1.
 
-Definition le_3_4 : le 3 4 := leS (leS (leS (le0 1))).
+Inductive le : nat -> nat -> Prop :=
+| leO n : le 0 n
+| leS m n : le m n -> le m.+1 n.+1.
+
+Definition le_3_4 : le 3 4 :=
+  leS (leS (leS (leO _))).
 
 Inductive le' : nat -> nat -> Prop :=
-  | le_refl n : le' n n
-  | leSr m n : le' m n -> le' m n.+1.
+| le_refl n : le' n n
+| leSr m n : le' m n -> le' m n.+1.
 
-(* Definition le_3_4' := leSr (le_refl _). *)
+Definition le_3_4' : le' 3 4 :=
+  leSr (le_refl _).
 
 (**
 The pros of this definition:
@@ -250,18 +257,17 @@ move=> v1 v2; elim=> [*|*|*|].
 - exact: permutation_skip.
 - exact: permutation_swap.
 move=> ??? _ P21 _ P32.
-apply: permutation_trans P32 P21.
-
-
-(** Exercise: try proving [pperm_sym]
-    by induction a list.
- *)
+by apply: permutation_trans P32 P21.
 (* Restart. *)
 (* suff {v1 v2} L : forall v1 v2, *)
 (*   perm v1 v2 -> perm v2 v1 by split; apply: L. *)
 (* elim. *)
-
+(* Undo 3. *)
 Qed.
+
+(** Exercise: try proving [pperm_sym]
+    by induction a list.
+ *)
 End InductivePermutations.
 
 
@@ -278,6 +284,7 @@ can be expressed semi-formally as follows
     insertion sort algorithm we implemented *)
 
 (** * The output is sorted *)
+
 
 (* Local Notation sorted := (sorted leT). *)
 
@@ -363,7 +370,7 @@ case: s=> // x s.
 move=> /=.
 case: ifP; first by move=> /= ->->.
 move=> e_gt_x.
-apply: insert_path=> //.
+apply: insert_path.
 have:= leT_total e x.
 by rewrite e_gt_x /= => ->.
 Qed.
@@ -411,7 +418,8 @@ all [pred x | count_mem x s1 == count_mem x s2]
 
 Lemma perm_sort s : perm_eql (sort leT s) s.
 Proof.
-Search _ (perm_eq ?s1 =1 perm_eq ?s2).
+  (* Search _ perm_eq. *)
+  Search _ (perm_eq ?s1 =1 perm_eq ?s2).
 apply/permPl/permP.
 elim: s=> //= x s IHs.
 move=> p.
