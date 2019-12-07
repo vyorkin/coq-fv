@@ -45,8 +45,8 @@ End Bool.
 
 Module Nat.
   Inductive nat : Type :=
-  | S of nat
-  | O.
+  | O
+  | S of nat.
 
   Print nat.
 

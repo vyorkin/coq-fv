@@ -182,7 +182,7 @@ Lemma eval_expr_iter'_correct e acc :
   eval_expr_iter' e acc = acc + eval_expr e.
 Proof.
   (* В посылках будут 2 гипотезы индукции,
-     по одной для каждого параметры конструктора
+     по одной для каждого параметрa конструктора
      [Plus e1 e2] из определения [eval_expr_iter'] *)
   elim: e acc.
   move=> n acc.
