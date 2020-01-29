@@ -11,8 +11,6 @@ Lemma enum_example m (r : rel 'I_m) f v (x : nat) :
 Proof.
 Admitted.
 
-
-
 Section TriFinType.
 (** Define [finType] structure for the following datatype *)
 (**

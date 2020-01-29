@@ -20,7 +20,9 @@ Proof.
 
   exists 0. (* Выберем произвольного человека *)
   Undo.
+  About ex_intro.
   apply: (ex_intro _ 0).
+  Check (ex_intro _ 0).
 
   move=> evP0 y.
   apply: DNE.
@@ -324,6 +326,7 @@ Lemma surj_epic f : surjective f -> epic f.
 Proof.
   rewrite /surjective /epic /eqfun.
   (* "=1" : eqfun : forall A B : Type, (B -> A) -> (B -> A) -> Prop *)
+  Print eqfun.
   About eq_compr.
   About compA.
   About eq_idr.

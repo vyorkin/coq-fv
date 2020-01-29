@@ -201,6 +201,12 @@ See "Packaging Mathematical Structures" by
 G. Gonthier et al. (2009) for more detail
 *)
 
+Module Equality1.
+  Definition axiom T (e : rel T) := forall x y, reflect (x = y) (e x y).
+  Record mixin_of T := Mixin {op : rel T; _ : axiom op}.
+  Notation class_of := mixin_of.
+  Structure type : Type := Pack {sort :> Type; class : class_of sort; }.
+End Equality1.
 
 (** Modules are used mainly as namespaces *)
 Module Equality.
@@ -218,6 +224,8 @@ Definition axiom T (e : rel T) :=
     {show telescopes on the whiteboard}
 *)
 
+About EqMixin.
+
 Structure mixin_of T :=
   Mixin {op : rel T; _ : axiom op}.
 
@@ -226,6 +234,10 @@ Structure mixin_of T :=
     its heirs would have [class_of] consisting of
     several mixins *)
 Notation class_of := mixin_of (only parsing).
+
+Print Equality.type.
+
+Print Equality.sort.
 
 Section ClassDef.
 
@@ -280,6 +292,9 @@ Notation eqType := type.
     instead of [Equality.type] *)
 Notation EqMixin := Mixin.
 Notation EqType T m := (@Pack T m).
+
+Print rel.
+Print pred.
 
 Notation "[ 'eqMixin' 'of' T ]" :=
   (class _ : mixin_of T)
