@@ -178,7 +178,7 @@ Module Props.
 
   Variable x : nat.
 
-  Compute applyn'  S 5 42.
+  Eval cbv in applyn'  S 5 42.
   Compute applyn'' S 5 42.
 
   Compute applyn'  S x 42.

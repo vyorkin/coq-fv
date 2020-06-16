@@ -5,7 +5,7 @@ Set Implicit Arguments.
 Module Lect2.
   Section ProductType.
 
-    (* Чтобы лучше разобраться как разные вещи работаю "под
+    (* Чтобы лучше разобраться как разные вещи работают "под
        капотом", мы делаем вид, что изначально у нас нет ничего
        в языке и мы начинаем всё самостоятельно постепенно
        добавлять. *)
@@ -128,6 +128,17 @@ Module Lect2.
       A /\ B -> B /\ A :=
       fun '(conj proof_A proof_B) => conj proof_B proof_A.
 
+
+    (* Можно переиспользовать одну и ту же нотацию в
+       разных скоупах, но не идиоматично.
+
+      Notation "a /\ b" := (conj a b).
+
+      Definition andC' (A B : Prop) :
+        A /\ B -> B /\ A :=
+        fun '(proof_A /\ proof_B) => proof_B /\ proof_A.
+    *)
+
     Definition andA (A B C : Prop) :
       (A /\ B) /\ C -> A /\ (B /\ C) :=
       fun '(conj (conj a b) c) => conj a (conj b c).
@@ -151,15 +162,28 @@ Module Lect2.
     | or_introl of A
     | or_intror of B.
 
-    Arguments or_introl [A B] a, [A] B a.
+    (* Максимально вставленные аргументы {A B} отличаются от
+       не максимально вставленных тем, что даже если конструктор типа
+       ни к чему не применяется, то они всё равно считаются "вставленными". *)
+
+    Arguments or_introl {A B} a, [A] B a.
     Arguments or_intror [A B] b, A [B] b.
 
     Notation "A \/ B" := (or A B) : type_scope.
 
-    Definition left'' (A B : Prop) : A -> A \/ B := fun a => or_introl a.
+    (* Если отключить максимально вставленные аргументы
+       [Arguments or_introl {A B} a], то Coq не сможет вывести правильный тип,
+       тк конструктор явно ни к чему не применяется.
+       Чтобы подсказать ему контекст [A -> A \/ B] для вывода типа
+       в данном случае можно использовать "максимально вставленные аргументы". *)
+    Definition left' (A B : Prop) : A -> A \/ B
+      := or_introl.
 
-    Definition left'  : forall (A B : Prop), A -> A \/ B := or_introl.
-    Definition right' : forall (A B : Prop), B -> A \/ B := or_intror.
+    Definition left'' (A B : Prop) : A -> A \/ B :=
+      fun a => or_introl a.
+
+    Definition right' : forall (A B : Prop), B -> A \/ B :=
+      or_intror.
 
     Compute (left' True).
     Compute (right' False).
@@ -168,9 +192,6 @@ Module Lect2.
       A -> A \/ B :=
       fun proofA => or_introl proofA.
       (* @or_introl A B. *)
-
-    Definition or2 :
-      forall (A B : Prop), A -> A \/ B := or_introl.
 
     Definition orC A B :
       A \/ B -> B \/ A :=
@@ -274,9 +295,8 @@ Module Lect2.
     About eq.
     About eq_refl.
 
-    (*
-    Короче смотри, если ты такой же тупой как я и
-    ты не понял всё, что написано выше, то вот как это понимаю я:
+    (* Если ты не понял всё, что написано выше,
+       то вот как это понимаю я:
 
     У нас есть тип [eq (A : Type) (a : A) : A -> Prop], он
     - параметризован некоторым типом (A : Type)
@@ -291,7 +311,7 @@ Module Lect2.
     Но вот сконструировать жителей последних двух
     типов у тебя не получится. Чтобы понять почему --
     глянь на конструктор eq: [eq_refl : eq a a].
-    Т.е. понимаешь, братан, там одинаковые буковки: [eq a a].
+    Т.е. там одинаковые буковки: [eq a a].
     У нас есть один единственный конструктор [eq_refl],
     который конструирует значение типа [eq] и он накладывает
     очень важное ограничение -- параметр типа и
@@ -368,14 +388,43 @@ Module Lect2.
         | eq_refl => id
         end.
 
-    Definition eq_foo (x y z : nat) :
-      x + y = y + z -> (x + y) + z = (y + z) + z :=
-      fun prf_eq =>
-        match prf_eq with
-     (* | eq_refl => eq_refl ??? : (x + y) + z = (y + z) + z *)
-     (* | eq_refl => eq_refl ??? : (x + y) + z = (y + z) + z *)
-        | eq_refl => eq_refl ((x + y) + z)
+    Definition eq_bar (x y z : nat) :
+      x = y + z -> x + z = (y + z) + z :=
+      fun x_eq_y_plus_z : x = y + z =>
+        match x_eq_y_plus_z with
+        | eq_refl => eq_refl (x + z)
         end.
+
+    Definition eq_sym' A (x y : A) :
+      x = y -> y = x :=
+      fun (prf_xy : x = y) =>
+        match
+          (* Это примерно [proof_xy : (_ = b)]
+             [b] это новое имя для [y] и
+             [b] является связанной переменной дальше *)
+          prf_xy in (_ = b)
+          (* подчеркивание в [(_ = b)] - это обязательно,
+             т.к. [x] - это параметр и меняться не может *)
+          (* мы возвращаем все тот же [y = x],
+             но с учетом переименования в [b] *)
+          return (b = x) with
+        | eq_refl =>
+          (* Внутри матч-выражения [b] идентичен [x] и
+             возвращаемый тип из [b = x] превращается в [x = x] *)
+          eq_refl x
+      end.
+
+
+Definition eq_foo (x y z : nat) :
+  x + y = y + z -> ((x + y) + z = (y + z) + z) :=
+  fun prf_eq : x + y = y + z =>
+    (* x + y = x + y -> ((x + y) + z = (x + y) + z) := *)
+    (* y + z = y + z -> ((y + z) + z = (y + z) + z) *)
+    match prf_eq with
+ (* | eq_refl => eq_refl ??? : (x + y) + z = (y + z) + z *)
+ (* | eq_refl => eq_refl ??? : (x + y) + z = (y + z) + z *)
+    | eq_refl => eq_refl ((x + y) + z)
+    end.
 
     Inductive foo (A : Type) (a : A) : A -> A -> Prop :=
       | foo_ctor : foo a a a.

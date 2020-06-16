@@ -26,6 +26,7 @@ Definition orb_table (b c : bool) : bool :=
 (** Note: the above translates into nested pattern-matching, check this *)
 
 Print orb_table.
+Print orb_my.
 
 (** 1d. Define [addb_my] function implementing exclusive boolean disjunction.
         {The name [addb] comes from the fact this operation behaves like addition modulo 2}
@@ -132,12 +133,21 @@ Definition applyn (f : nat -> nat) :=
     if n is n'.+1 then rec n' (f x)
     else x.
 
+Print iter.
+
 Definition addn' (x y : nat) : nat := applyn S x y.
+
+Compute (iter 5 S 0).
+
+Definition addn'' (x y : nat) : nat := iter x S y.
 
 Compute addn' 5 4.
 Compute addn' 7 5.
 
+Compute addn'' 5 4.
+Compute addn'' 7 5.
+
 Definition muln' (n x : nat) : nat :=
-  applyn (fun v => addn' v x) (predn n) x.
+  iter (predn n) (fun v => addn' v x) x.
 
 Compute muln' 8 8.
