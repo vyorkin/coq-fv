@@ -388,6 +388,18 @@ Module Lect2.
         | eq_refl => id
         end.
 
+    (* Cм. коментарии к [eq_sym'] нижe и
+       Coq-чатик в телеге (поиск по eq_trans_ann) *)
+
+    Definition eq_trans_ann A (x y z : A) :
+      x = y -> (y = z -> x = z) :=
+      fun x_eq_y : x = y =>
+        match
+          x_eq_y in (_ = b)
+          return (b = z -> x = z) with
+        | eq_refl => fun (prf_xz : x = z) => prf_xz
+        end.
+
     Definition eq_bar (x y z : nat) :
       x = y + z -> x + z = (y + z) + z :=
       fun x_eq_y_plus_z : x = y + z =>
@@ -399,7 +411,7 @@ Module Lect2.
       x = y -> y = x :=
       fun (prf_xy : x = y) =>
         match
-          (* Это примерно [proof_xy : (_ = b)]
+          (* Это примерно [prf_xy : (_ = b)]
              [b] это новое имя для [y] и
              [b] является связанной переменной дальше *)
           prf_xy in (_ = b)
@@ -414,17 +426,30 @@ Module Lect2.
           eq_refl x
       end.
 
+    Definition eq_foo (x y z : nat) :
+      x + y = y + z -> ((x + y) + z = (y + z) + z) :=
+      fun prf_eq : x + y = y + z =>
+        (* x + y = x + y -> ((x + y) + z = (x + y) + z) := *)
+        match prf_eq with
+     (* | eq_refl => eq_refl ??? : (x + y) + z = (y + z) + z *)
+        | eq_refl => eq_refl ((x + y) + z)
+        end.
 
-Definition eq_foo (x y z : nat) :
-  x + y = y + z -> ((x + y) + z = (y + z) + z) :=
-  fun prf_eq : x + y = y + z =>
-    (* x + y = x + y -> ((x + y) + z = (x + y) + z) := *)
-    (* y + z = y + z -> ((y + z) + z = (y + z) + z) *)
-    match prf_eq with
- (* | eq_refl => eq_refl ??? : (x + y) + z = (y + z) + z *)
- (* | eq_refl => eq_refl ??? : (x + y) + z = (y + z) + z *)
-    | eq_refl => eq_refl ((x + y) + z)
-    end.
+    Definition eq_foo_ann (x y z : nat) :
+      x + y = y + z -> ((x + y) + z = (y + z) + z) :=
+      fun prf_eq : x + y = y + z =>
+        match
+          prf_eq in (_ = b) (* x + y = b *)
+       (* Аннотация типа возвращаемого типa заматченного выражения.
+          В нужную часть типа подставляем связанную типовую переменную [b]:
+          return ((x + y) + z = (y + z) + z)
+                                   ^
+                                   b
+                                 x + y
+       *)
+          return ((x + y) + z = b + z) with
+        | eq_refl => eq_refl ((x + y) + z)
+        end.
 
     Inductive foo (A : Type) (a : A) : A -> A -> Prop :=
       | foo_ctor : foo a a a.
