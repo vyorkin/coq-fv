@@ -58,12 +58,16 @@ Proof.
     exact: a_i_b.
 Qed.
 
+(* [apply] без [:] использует другой движок унификации,
+   что может в дальнейшем привести к проблемам, т.е.
+   лучше всегда использовать версию c [:], т.e. [apply: whatever] *)
+
 Lemma p_is_not_equal_not_p :
   (* ((A -> (A -> False) /\ (A -> False) -> A) -> False) *)
   ~ (A <-> ~ A).
 Proof.
   (* unfold not. *)
-  (* rewrite /not. *)
+  rewrite /not.
   case.
   move=> a_i_not_a not_a_i_a.
   apply: (a_i_not_a).
@@ -80,7 +84,6 @@ Proof.
   exact: a.
 Qed.
 
-
 Lemma p_is_not_equal_not_p' :
   (* ((A -> (A -> False) /\ (A -> False) -> A) -> False) *)
   ~ (A <-> ~ A).
@@ -88,6 +91,10 @@ Proof.
   (* unfold not. *)
   (* rewrite /not. *)
   case.
+
+  (* У нас выше есть доказанная лемма:
+     p_imp_np_iff_np : (A -> ~A) <-> ~A *)
+
   move/p_imp_np_iff_np.
   move=> not_a not_a_i_a.
   apply: (not_a).
@@ -146,8 +153,12 @@ Proof.
      Coq понимает, что нужно булево значение преобразовать в тип,
      используя базу данных коэрций (в которую заранее добавлен [is_true]) *)
   Unset Printing Coercions.
+
   (* Unset Printing Notations. *)
+
   (* Search _ (orb _ (negb _)). *)
+  (* Search _ (_ || ~~_). *)
+
   (* Print orbN. *)
   (* apply orbN. *)
   (* Set Printing Notations. *)
@@ -160,13 +171,17 @@ Qed.
 (* Check erefl. *)
 (* Check (erefl true). *)
 
+About implb.
+
 Lemma disj_implb a b :
   a || (a ==> b).
 Proof.
+  case a.
+  - done.
+  done.
+  Restart.
+
   by case a.
-  (* case a. *)
-  (* - simpl. done. *)
-  (* simpl. done. *)
 Qed.
 
 Lemma iff_is_if_and_only_if a b :
@@ -191,11 +206,12 @@ Proof.
   (* Unset Printing Notations. *)
   (* Print eqfun. *)
   (* Print funcomp. *)
+  Locate "=1".
   (* Set Printing Notations. *)
 
   (* Это моё глупое решение, следующие два более хитрые и короткие. *)
 
-  case. simpl. (* [simpl] это не ssreflec'овая тактика, так больше не делаем :) *)
+  case. simpl. (* [simpl] это не ssreflect'овая тактика, так больше не делаем :) *)
   Undo 2.
   case=>//=. (* а вот так правильно делать, [//=] упрощает цель *)
   - case E1:(f true).
@@ -203,11 +219,10 @@ Proof.
     + case E2:(f false).
       * by rewrite E1.
       * by rewrite E2.
-    + move=>//=.
-      * case E2:(f false).
-        case E1:(f true).
-        - by rewrite E1.
-        - by rewrite E2.
+    + case E2:(f false).
+      case E1:(f true).
+      - by rewrite E1.
+      - by rewrite E2.
       * by rewrite E2.
 
   Restart.
@@ -232,6 +247,7 @@ Qed.
 Lemma even_add :
   {morph (negb \o odd) : x y / x + y >-> x == y}.
 Proof.
+  Locate "morph".
   Unset Printing Notations.
   Set Printing Notations.
   About morphism_2. (* Print morphism_2. *)
@@ -246,19 +262,25 @@ Proof.
      которые можно задействовать/использовать. *)
   move=> x y/=.
   Search _ (odd (_ + _)).
+  About odd_add.
+  Locate "(+)".
+  About addb.
   (* have H: ~~ odd (x + y). rewrite odd_add. *)
   (* C [have H] это альтернативный путь, по которому можно пойти.
      Но можно просто переписывать часть цели/выражения.*)
   rewrite [in ~~ odd (x + y)] odd_add.
-  (* Вот такой синтаксис как выше позволяет выплнить
+  (* Вот такой синтаксис как выше позволяет выпoлнить
      переписывание только в указанной часть выражения. *)
+  (* Search _ (~~ _ (+) _). *)
   Search _ (~~ _ == _).
   rewrite eqb_negLR.
   Search _ (~~ ~~ _).
-  Search _ involutive.
-  (* rewrite Bool.negb_involutive. *)
-  Search _ (~~ _ = _).
-  rewrite negbK.
+  rewrite Bool.negb_involutive.
+  (* Search _ involutive. *)
+  (* Search _ (~~ _ = _). *)
+  (* rewrite negbK. *)
+
+  Search _ (~~ (_ (+) _)).
   by rewrite negb_add.
 Qed.
 
@@ -323,3 +345,54 @@ Proof.
 Qed.
 
 End eq_comp.
+
+(* Dependent pattern-matching practice.
+   Also see Lecture 3 (+links).
+*)
+
+About f_equal.
+About eq_add_S.
+
+About f_equal_pred.
+Print eq_refl.
+
+(* f_equal_pred : forall x y : nat, x = y -> x.-1 = y.-1 *)
+
+Definition succ_inj (n m : nat) :
+  S n = S m -> n = m
+:=
+  fun eqS =>
+    match
+      eqS in (_ = S v) (* v = m *)
+      return (n = v)
+    with
+    | erefl => erefl
+    end.
+
+
+Definition false_eq_true_implies_False :
+  false = true -> False :=
+  fun prf =>
+    match prf in (_ = t)
+          return (if t then False else True)
+    with
+    | erefl => I
+    end.
+
+(*
+Definition neq_sym A (x y : A) :
+  x <> y -> y <> x
+:=
+
+Definition f_congr {A B} (f : A -> B) (x y : A) :
+  x = y  ->  f x = f y
+:=
+
+Definition f_congr' A B (f g : A -> B) (x y : A) :
+  f = g  ->  x = y  ->  f x = g y
+:=
+
+Definition pair_inj A B (a1 a2 : A) (b1 b2 : B) :
+  (a1, b1) = (a2, b2) -> (a1 = a2) /\ (b1 = b2)
+:=
+*)
