@@ -36,7 +36,7 @@ Proof.
   move=> P Q PiQ P_holds.
   apply PiQ in P_holds.
   (* clear PiQ. *)
-  exact P_holds.
+  exact: P_holds.
 Qed.
 
 (* Note that this replaces our previous hypothesis (and now its
@@ -62,10 +62,11 @@ Proof.
   (* Здесь C (заключение импликации) сопоставляется с D (хвост цели).
      А они не одинаковы, получаем ошибку. *)
   Undo 1.
-  (* move: H1. apply. exact H4. *)
-  (* move: H3. apply. exact H4. *)
-  (* move: H2. apply. exact H4. *)
-  (* move: H3. apply. exact H4. *)
+  move: H1. apply. exact H4.
+  move: H3. apply. exact H4.
+  move: H2. apply. exact H4.
+  move: H3. apply. exact H4.
+  Undo 12.
   exact: (H1 H4 (H3 H4) (H2 H4 (H3 H4))).
 Qed.
 End LongSmth.

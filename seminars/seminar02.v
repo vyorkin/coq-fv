@@ -187,11 +187,26 @@ Qed.
 Lemma iff_is_if_and_only_if a b :
   (a ==> b) && (b ==> a) = (a == b).
 Proof.
+  Locate "==>".
+  (* Definition implb (b1 b2:bool) : bool := if b1 then b2 else true. *)
   by case a; case b.
+
+  Restart.
+
+  move: a b.
+  by case; case.
+
+  Restart.
+
+  move: a b=> [[] | []] /=.
+  Undo.
+  by move: a b=> [[] | []].
 Qed.
 
 Lemma implb_trans : transitive implb.
 Proof.
+  Eval hnf in transitive implb.
+
   (* case. case. case. done. done. done. *)
   (* case. done. done. *)
 
@@ -247,6 +262,9 @@ Qed.
 Lemma even_add :
   {morph (negb \o odd) : x y / x + y >-> x == y}.
 Proof.
+  Eval hnf in {morph (negb \o odd) : x y / x + y >-> x == y}.
+
+
   Locate "morph".
   Unset Printing Notations.
   Set Printing Notations.
@@ -260,7 +278,7 @@ Proof.
      oбычно значительная часть времени по доказательству
      уходит на поиск уже доказанных подходящих лемм,
      которые можно задействовать/использовать. *)
-  move=> x y/=.
+  move=> x y /=.
   Search _ (odd (_ + _)).
   About odd_add.
   Locate "(+)".
@@ -378,6 +396,28 @@ Definition false_eq_true_implies_False :
     with
     | erefl => I
     end.
+
+(* TL;DR про поиск:
+
+   https://github.com/math-comp/math-comp/wiki/Search
+   https://github.com/math-comp/math-comp/blob/master/CONTRIBUTING.md#where
+
+   В общем виде поисковый запрос выглядит так:
+
+   Search (-)?(symbol|pattern)+ (in (module)+)?
+
+   где
+     symbol  - какая-то подстрока
+     pattern - какой-то шаблон
+
+   Запрос вида Search pattern. ищет только в заключениях.
+   Чтобы поискать везде, включая предпосылки, нужно писать:
+
+   Search _ pattern.
+
+*)
+
+Search -(_ < _) -(_ = _) "odd" in ssrnat.
 
 (*
 Definition neq_sym A (x y : A) :

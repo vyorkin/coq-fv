@@ -31,29 +31,36 @@ Proof.
       * exact: ex_intro P x px.
         Undo.
         exists x. exact: px.
-    + case=> q evx.
-      * move: evx.
-      * case=> x px.
-        (* Есть тактика refine, ей можно скормить
-           неполный терм с подчёркиваниями, после чего она
-           предложит доказать всё недостающее *)
-        refine (ex_intro _ _ (conj _ _)).
-        Undo.
+    + case=> q.
+      case=> x px.
+      by exists x.
+      Undo.
+      exists x.
+      split.
+      exact: q.
+      exact: px.
+      Undo 4.
 
-        Unset Printing Notations.
-        (* Вот так можно посмотреть какой ожидаетcя вместо [P] *)
-        Fail refine (ex_intro P _ _).
-        Set Printing Notations.
-        exact: ex_intro ((fun x : A => Q /\ (P x))) x (conj q px).
-        Undo.
+      (* Есть тактика refine, ей можно скормить
+         неполный терм с подчёркиваниями, после чего она
+         предложит доказать всё недостающее *)
+      refine (ex_intro _ _ (conj _ _)).
+      Undo.
 
-        (* То же самое можно было бы записать проще:
-           сначала утверждаем, что существует [x], затем
-           предъявляем предикат (который выполняется) для этого [x]. *)
-        exists x.
-        split.
-        - exact: q.
-        exact: px.
+      Unset Printing Notations.
+      (* Вот так можно посмотреть какой ожидаетcя вместо [P] *)
+      Fail refine (ex_intro P _ _).
+      Set Printing Notations.
+      exact: ex_intro ((fun x : A => Q /\ (P x))) x (conj q px).
+      Undo.
+
+      (* То же самое можно было бы записать проще:
+         сначала утверждаем, что существует [x], затем
+         предъявляем предикат (который выполняется) для этого [x]. *)
+      exists x.
+      split.
+      - exact: q.
+      exact: px.
 
   Restart.
 
@@ -69,6 +76,13 @@ Lemma exist_conj_commute A (P Q : A -> Prop) :
 Proof.
   case=> x [px qx].
   split.
+
+  exists x.
+  exact: px.
+  exists x.
+  exact: qx.
+  Undo 4.
+
   - exact: ex_intro P x px.
   exact: ex_intro Q x qx.
 
@@ -76,6 +90,9 @@ Proof.
 
   by case=> [x [px qx]]; split; exists x.
 Qed.
+
+(* Locate "~".  Print not.  *) (* Логическое отрицание: A -> False *)
+(* Locate "~~". Print negb. *) (* Вычислительное отрицание: bool -> bool *)
 
 Lemma conj_exist_does_not_commute :
   ~ (forall A (P Q : A -> Prop),
@@ -125,8 +142,20 @@ Proof.
   move=> H.
   case: (H bool id not).
   - split.
-    + exact: (ex_intro is_true true).
-    + exact: (ex_intro (not \o is_true) false).
+    + by exists true.
+      Undo.
+      exact: (ex_intro is_true true).
+    + by exists false.
+      Undo.
+      exact: (ex_intro (not \o is_true) false).
+  move=> b.
+  case.
+  rewrite /not.
+  clear H.
+  move=> eb H.
+  exact: (H eb).
+
+  Undo 6.
   by move=> b; case.
 
   Restart.
@@ -147,7 +176,7 @@ Qed.
 *)
 Lemma curry_dep A (P : A -> Prop) Q :
   ((exists x, P x) -> Q) -> (forall x, P x -> Q).
-Proof. move=> f x px. exact: (f (ex_intro _ x px)). Qed.
+Proof. by move=> f x px; apply: f; exists x. Qed.
 
 (* Если не для всех [x] утверждение [P x] не истинно,
    то существует такой [x], для которого оно истинно. *)
@@ -163,14 +192,20 @@ Definition DNE := forall (P : Prop), ~ ~ P -> P.
 Lemma not_for_all_is_exists_iff_dne :
   not_forall_exists <-> DNE.
 Proof.
-  rewrite /not_forall_exists /DNE.
+  rewrite /not_forall_exists /DNE /not.
+
+  (* например, для биимпликации (IFF)
+     [split=> [H1 | H2]] для каждой импликации помещает в контекст
+     соответствующую ей предпосылку (левую или правую соответственно) *)
   split=> [nfe | dne].
-  (* Если присмотреться к форме [nfe], то видно, что там в
-     некотором роде происходит снятие двойного отрицания:
+
+  (* Если присмотреться к форме [nfe] (развернув not для наглядности),
+     то видно, что там в некотором роде происходит снятие двойного отрицания:
      в предпосылку ~ (forall x : A, ~ P x) входят два отрицания,
      а в заключении (exists x : A, P x) их уже нет. *)
+
   - move=> P nnP.
-    (* Подставим в параметр типа [A] в [nfe] "тип истины" -- [True].
+    (* Подставим в параметр [nfe] типа [A] "тип истины" -- [True].
        Конечно, до этого нужно ещё догадаться, но истину можно
        тривиально сконструировать, а это уже наводит на мысли ;) *)
     Check (nfe True).
@@ -628,5 +663,6 @@ move=> /(_ bool Empty_set false true) H.
 apply/notF/H.
 by apply: fext.
 Qed.
+
 
 End Misc.

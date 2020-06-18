@@ -495,6 +495,7 @@ Proof.
          поэтому можем сразу переместить x, y и z в контекст и
          Coq поймёт, что нужно развенуть определение *)
 
+      (* Либо можно вот так развернуть его в цели: *)
       Eval hnf in associative addn.
 
       move=> x y z.
@@ -562,7 +563,7 @@ Proof.
       rewrite /right_id.
       (* А вот тут уже только по индукции *)
 
-      elim.
+      elim.ag
       - by [].
       - move=> n IHn.
         About addSn.
