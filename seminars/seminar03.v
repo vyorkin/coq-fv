@@ -267,7 +267,7 @@ Proof.
            тогда нам нужно инвертировать цель.
 
            А теперь, посмотрим на [dne], заметим, что тут
-           мы можем применить backward reasoning, инвертируя цель. *)
+           мы можем применить backwards reasoning, инвертируя цель. *)
         apply: dne.
         (* Вынесем гипотезу в контекст, a [all_npx] перетащим в цель *)
         move=> H.
@@ -275,9 +275,13 @@ Proof.
            all_npx : (forall x : A, P x) -> False)
            Её предпосылка доказывает [False] в цели, применяем обратное рассуждение.*)
         apply: all_npx.
-        (* Теперь мы можем воспользоваться леммой [curry_dep].
+
+        (* Теперь мы можем воспользоваться леммой [curry_dep]:
+           ((exists x, P x) -> Q) -> (forall x, P x -> Q)
            Опять же, backward reasoning, всегда помним об этом принципе. *)
+
         apply: curry_dep.
+
         (* А это и есть наша гипотеза [H]! *)
         exact: H.
 
@@ -302,7 +306,19 @@ Fixpoint mostowski_equiv (a : bool) (n : nat) :=
   if n is n'.+1 then mostowski_equiv a n' == a
   else a.
 
+(* Т.е. у нас имеется некоторое количество равенств вида
+   ((true == true ...) == true) == true
+   или
+   ((false == false ...) == false) == false
+   в зависимости от [a : bool] у нас равенства
+   между жителями [bool]: [true] или [false].
+   Это количество равенств равно числу [n]. *)
+
 (* ((a == a ...) == a) == a *)
+
+Compute mostowski_equiv false 0.
+Compute mostowski_equiv false 1.
+Compute mostowski_equiv false 2. (* <<- !!! *)
 
 Lemma mostowski_equiv_even_odd a n :
   mostowski_equiv a n = a || odd n.
