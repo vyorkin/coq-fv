@@ -5,7 +5,7 @@ Set Implicit Arguments.
 Module Lect2.
   Section ProductType.
 
-    (* Чтобы лучше разобраться как разные вещи работаю "под
+    (* Чтобы лучше разобраться как разные вещи работают "под
        капотом", мы делаем вид, что изначально у нас нет ничего
        в языке и мы начинаем всё самостоятельно постепенно
        добавлять. *)
@@ -128,6 +128,17 @@ Module Lect2.
       A /\ B -> B /\ A :=
       fun '(conj proof_A proof_B) => conj proof_B proof_A.
 
+
+    (* Можно переиспользовать одну и ту же нотацию в
+       разных скоупах, но не идиоматично.
+
+      Notation "a /\ b" := (conj a b).
+
+      Definition andC' (A B : Prop) :
+        A /\ B -> B /\ A :=
+        fun '(proof_A /\ proof_B) => proof_B /\ proof_A.
+    *)
+
     Definition andA (A B C : Prop) :
       (A /\ B) /\ C -> A /\ (B /\ C) :=
       fun '(conj (conj a b) c) => conj a (conj b c).
@@ -151,15 +162,28 @@ Module Lect2.
     | or_introl of A
     | or_intror of B.
 
-    Arguments or_introl [A B] a, [A] B a.
+    (* Максимально вставленные аргументы {A B} отличаются от
+       не максимально вставленных тем, что даже если конструктор типа
+       ни к чему не применяется, то они всё равно считаются "вставленными". *)
+
+    Arguments or_introl {A B} a, [A] B a.
     Arguments or_intror [A B] b, A [B] b.
 
     Notation "A \/ B" := (or A B) : type_scope.
 
-    Definition left'' (A B : Prop) : A -> A \/ B := fun a => or_introl a.
+    (* Если отключить максимально вставленные аргументы
+       [Arguments or_introl {A B} a], то Coq не сможет вывести правильный тип,
+       тк конструктор явно ни к чему не применяется.
+       Чтобы подсказать ему контекст [A -> A \/ B] для вывода типа
+       в данном случае можно использовать "максимально вставленные аргументы". *)
+    Definition left' (A B : Prop) : A -> A \/ B
+      := or_introl.
 
-    Definition left'  : forall (A B : Prop), A -> A \/ B := or_introl.
-    Definition right' : forall (A B : Prop), B -> A \/ B := or_intror.
+    Definition left'' (A B : Prop) : A -> A \/ B :=
+      fun a => or_introl a.
+
+    Definition right' : forall (A B : Prop), B -> A \/ B :=
+      or_intror.
 
     Compute (left' True).
     Compute (right' False).
@@ -168,9 +192,6 @@ Module Lect2.
       A -> A \/ B :=
       fun proofA => or_introl proofA.
       (* @or_introl A B. *)
-
-    Definition or2 :
-      forall (A B : Prop), A -> A \/ B := or_introl.
 
     Definition orC A B :
       A \/ B -> B \/ A :=
@@ -274,9 +295,8 @@ Module Lect2.
     About eq.
     About eq_refl.
 
-    (*
-    Короче смотри, если ты такой же тупой как я и
-    ты не понял всё, что написано выше, то вот как это понимаю я:
+    (* Если ты не понял всё, что написано выше,
+       то вот как это понимаю я:
 
     У нас есть тип [eq (A : Type) (a : A) : A -> Prop], он
     - параметризован некоторым типом (A : Type)
@@ -291,7 +311,7 @@ Module Lect2.
     Но вот сконструировать жителей последних двух
     типов у тебя не получится. Чтобы понять почему --
     глянь на конструктор eq: [eq_refl : eq a a].
-    Т.е. понимаешь, братан, там одинаковые буковки: [eq a a].
+    Т.е. там одинаковые буковки: [eq a a].
     У нас есть один единственный конструктор [eq_refl],
     который конструирует значение типа [eq] и он накладывает
     очень важное ограничение -- параметр типа и
@@ -368,12 +388,66 @@ Module Lect2.
         | eq_refl => id
         end.
 
+    (* Cм. коментарии к [eq_sym'] нижe и
+       Coq-чатик в телеге (поиск по eq_trans_ann) *)
+
+    Definition eq_trans_ann A (x y z : A) :
+      x = y -> (y = z -> x = z) :=
+      fun x_eq_y : x = y =>
+        match
+          x_eq_y in (_ = b)
+          return (b = z -> x = z) with
+        | eq_refl => fun (prf_xz : x = z) => prf_xz
+        end.
+
+    Definition eq_bar (x y z : nat) :
+      x = y + z -> x + z = (y + z) + z :=
+      fun x_eq_y_plus_z : x = y + z =>
+        match x_eq_y_plus_z with
+        | eq_refl => eq_refl (x + z)
+        end.
+
+    Definition eq_sym' A (x y : A) :
+      x = y -> y = x :=
+      fun (prf_xy : x = y) =>
+        match
+          (* Это примерно [prf_xy : (_ = b)]
+             [b] это новое имя для [y] и
+             [b] является связанной переменной дальше *)
+          prf_xy in (_ = b)
+          (* подчеркивание в [(_ = b)] - это обязательно,
+             т.к. [x] - это параметр и меняться не может *)
+          (* мы возвращаем все тот же [y = x],
+             но с учетом переименования в [b] *)
+          return (b = x) with
+        | eq_refl =>
+          (* Внутри матч-выражения [b] идентичен [x] и
+             возвращаемый тип из [b = x] превращается в [x = x] *)
+          eq_refl x
+      end.
+
     Definition eq_foo (x y z : nat) :
-      x + y = y + z -> (x + y) + z = (y + z) + z :=
-      fun prf_eq =>
+      x + y = y + z -> ((x + y) + z = (y + z) + z) :=
+      fun prf_eq : x + y = y + z =>
+        (* x + y = x + y -> ((x + y) + z = (x + y) + z) := *)
         match prf_eq with
      (* | eq_refl => eq_refl ??? : (x + y) + z = (y + z) + z *)
-     (* | eq_refl => eq_refl ??? : (x + y) + z = (y + z) + z *)
+        | eq_refl => eq_refl ((x + y) + z)
+        end.
+
+    Definition eq_foo_ann (x y z : nat) :
+      x + y = y + z -> ((x + y) + z = (y + z) + z) :=
+      fun prf_eq : x + y = y + z =>
+        match
+          prf_eq in (_ = b) (* x + y = b *)
+       (* Аннотация типа возвращаемого типa заматченного выражения.
+          В нужную часть типа подставляем связанную типовую переменную [b]:
+          return ((x + y) + z = (y + z) + z)
+                                   ^
+                                   b
+                                 x + y
+       *)
+          return ((x + y) + z = b + z) with
         | eq_refl => eq_refl ((x + y) + z)
         end.
 
@@ -413,8 +487,10 @@ Module Lect2.
       - move=> a c.
         left.  (* доказываем/строим (конструктор) [or_introl] *)
                (* нам нужно доказать/построить и [A] и [C]    *)
+        (* можно либо сразу построить терм конъюнкции,
+           либо разбить цель на 2 подцели, применив тактику [split] *)
         split. (* разбиваем это на 2 подцели тактикой [split] *)
-               (* и строим каждое отдельно *)
+               (* и строим каждое док-во/терм отдельно *)
         + exact: a.
           exact c. (* тут [+] не ставим (тк этo последняя ветка) *)
       - move=> b c.
@@ -433,10 +509,28 @@ Module Lect2.
     Lemma or_and_distr'' A B C :
       (A \/ B) /\ C -> A /\ C \/ B /\ C.
     Proof.
+      (* Делает паттерн-матчинг по голове\вершине стека *)
+      (* Здесь квадратные скобочки это по сути это аналог [case] *)
+      move=> [].
+      Undo.
+      (* Можно сразу переносить в контекст *)
+      move=> [a_or_b c].
+      Undo.
+
+      (* Соответственно вложенные квадратные скобки это вложенный [case].
+         Здесь будут созданы 2 подцели. *)
       move=> [[a | b] c].
       Restart.
 
+      (* Подцели можно сразу доказывать, указывая док-ва (для каждой
+         подцели, в соотв. порядке) в следующем выражении в кв. скобках *)
+
+      (* Тактикал [;] применяет каждую из тактик
+         справа к соответствующей подцели слева. *)
       by move=> [[a | b] c]; [left | right].
+
+      (* В данном случае термы, доказывающие цели уже будут находиться в
+         контексте после паттерн-матчинга, поэтому док-во тривиально с помощью [by]. *)
     Qed.
 
     Section HilbertSaxiom.
@@ -447,13 +541,22 @@ Module Lect2.
         (A -> B -> C) -> (A -> B) -> A -> C.
       Proof.
         move=> hAiBiC hAiB hA.
+        (* Можно построить пруф-терм сразу *)
+        exact: (hAiBiC hA (hAiB hA)).
+        Undo.
         move: hAiBiC.
+        (* A -> B -> C
+                     C *)
         apply.
         (* - exact hA. move: hA. exact hAiB. *)
         - by [].
         move: hAiB.
         apply.
         by [].
+        Undo 3.
+        exact: (hAiB hA).
+        Undo.
+        by apply: hAiB.
       Qed.
 
     End HilbertSaxiom.
@@ -462,9 +565,9 @@ Module Lect2.
     Section HS2.
       Variables A B C : Prop.
       Hypotheses (hAiBiC : A -> B -> C) (hAiB : A -> B) (hA : A).
+
       Lemma HilbertS': C.
       Proof.
-
         (* apply [hAiBiC] and apply [hA] only to the first subgoal
            generated by the [hAiBiC].
         *)
@@ -518,17 +621,23 @@ Module Lect2.
       (* Proof. exact: (eq_refl). Qed. *)
       Proof. by []. Qed.
 
-      Lemma eq_sym' x y :
+      Lemma eq_sym'' x y :
         x = y -> y = x.
       Proof.
         move=> x_eq_y.
+        rewrite x_eq_y.
+        done.
+        Undo 2.
         rewrite -x_eq_y.
         by [].
         Show Proof.
       (* QED. *)
       Defined.
-      Eval compute in eq_sym'.
 
+      (* Мы использовали выше Defined, тк он
+         позвляет заглянуть в структуру пруф-терма. *)
+
+      Eval compute in eq_sym''.
 
       Lemma eq_sym_shorter x y :
         x = y -> y = x.

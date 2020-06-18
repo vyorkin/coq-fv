@@ -54,7 +54,10 @@ Module Lect3.
 
     (** Type inference is undecidable *)
 
-    (* Тут мы просим вывести ф-цию над типами,
+    (* Тут мы просим вывести ф-цию над типами.
+       Другими словами мы "просим" провести унификацию
+       высшего порядка, т.е. вывести "теорему",
+       которую мы "доказали", построив данный proof-term,
        а это алгоритмически не разрешимая задача. *)
     Fail Check (fun n => if n is S n' then n' else tt).
 
@@ -133,7 +136,8 @@ Module Lect3.
     move=> A P Q.
     split.
     - move=> all_qpx.
-      case: (lem Q).
+      move: (lem Q).
+      case.
       + move=> q.
         left.
         exact q.
@@ -164,6 +168,7 @@ Module Lect3.
       right.
       exact: all_px x.
     Undo 9.
+
     case; first by move=> q x; left.
     move=> all_px x.
     right. exact: all_px.
@@ -227,7 +232,7 @@ Module Lect3.
 
     (** Simplified notation *)
     Notation "’exists’ x : A , p" :=
-      (ex (fun x : A => p))
+      (ex_my (fun x : A => p))
         (at level 200, right associativity).
 
     (** Full-blown notation: multiple binders *)
@@ -261,8 +266,7 @@ Module Lect3.
      утверждение _ (которое мы никак не именуем) типа [A]
      и утверждение типа [B].
 
-     Если ты совсем тупой (как я), то
-     попробуй посмотреть на подстановку:
+     Можно посмотреть на подстановку:
 
      Notation "’exists’ _ : A, B" :=
       (ex (fun x : A => B))
@@ -394,13 +398,23 @@ Module Lect3.
     fun eq : false = true  =>
       (* тут false не меняется, а true меняется (тк это индекс) *)
       (* [in] это по сути [:],
-         т.е. это нужно читать как [eq : eq _ b]*)
+         т.е. это нужно читать как [eq : eq _ b] *)
       match eq in (_ = b)
             return (if b then False else True)
-      (* до паттерн-матчинга:
-            return True *)
-      (* после паттерн-матчинга:
-            return False *)
+
+      (* до паттерн-матчинга мы знаем,
+         что [true] унифицируется с [b] /
+         что [b] и [true] это одно и то же:
+
+         return (if true False else True)
+         return False *)
+
+      (* внутри паттерн-матчинга [b]
+         "унифицируется c" / "заменяется на" [false]):
+
+         return (if false False else True)
+         return True *)
+
       with
       | erefl => I : True
       end.
@@ -418,18 +432,37 @@ Module Lect3.
   (* fun     eq : false = true => *)
   (*   match eq : (_    = b) *)
 
+  (* Ещё один хороший\понятный пример из документации.
+     Здесь тип возвращаемого списка зависит от типов переданных списков.
+
+     Fixpoint concat (n:nat) (l:listn n) (m:nat) (l':listn m) {struct l} : listn (n + m) :=
+     match l in listn n return listn (n + m) with
+     | niln => l'
+     | consn n' a y => consn (n' + m) a (concat n' y m l')
+     end.
+
+     И ещё один:
+
+     Definition tail n (v: listn (S n)) :=
+     match v in listn (S m) return listn m with
+     | niln => False_rect unit
+     | consn n' a y => y
+     end.
+  *)
+
 
   (* Injectivity of constructors *)
 
-  Lemma succ_inj n m :
-    S n = S m -> n = m.
-  Proof.
-    case. (* special case for [case] *)
-    (* Тактика [case] работает специальным образом в таком случае.
+Lemma succ_inj n m :
+  S n = S m -> n = m.
+Proof.
+  case. (* special case for [case] *)
+    (* Тактика [case] работает особым образом в таком случае.
        Если мы на таком равенстве с конструкторами используем её, то
        она нам преобразует в соотв. форму -- "распаковывает" конструкторы.
      *)
     Show Proof.
+    (* f_equal : forall (A B : Type) (f : A -> B) (x y : A), x = y -> f x = f y *)
     done.
   Qed.
 
@@ -453,6 +486,8 @@ Module Lect3.
     by case=> ->->.
   Qed.
 
+  (*** Induction *)
+
     Lemma addnA :
       associative addn.
     Proof.
@@ -460,11 +495,12 @@ Module Lect3.
          поэтому можем сразу переместить x, y и z в контекст и
          Coq поймёт, что нужно развенуть определение *)
 
+      (* Либо можно вот так развернуть его в цели: *)
       Eval hnf in associative addn.
 
       move=> x y z.
       (* Есть такая эвристика, что если ф-ция определена рекурсивно по
-         1-му аргументу, то идукцию следует тоже делать по 1-му аргументу.
+         1-му аргументу, то индукцию следует тоже делать по 1-му аргументу.
 
          Индукция есть в некотором смысле символическое вычисление. *)
 
@@ -489,7 +525,13 @@ Module Lect3.
 
       (* Set Printing All. *)
       (* rewrite /addn. *)
+      (* Print addn. *)
+      (* [/=] запускает классическую тактику [simpl] *)
+      (* addn тут не развернётся, тк внутри него [addn_rec] помечена как [nosimpl]:
+         addn = nosimpl addn_rec : nat -> nat -> nat
+         см. https://coq.inria.fr/refman/proof-engine/ssreflect-proof-language.html?highlight=nosimpl *)
       move=> /=.
+
       (* Unset Printing All. *)
       done.
 
@@ -521,7 +563,7 @@ Module Lect3.
       rewrite /right_id.
       (* А вот тут уже только по индукции *)
 
-      elim.
+      elim.ag
       - by [].
       - move=> n IHn.
         About addSn.

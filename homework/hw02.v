@@ -14,17 +14,25 @@ Proof.
   by []. Undo 1.
   by split; exact; exact. Undo 1.
   split. exact. exact.
+
+  Restart.
+
+  rewrite /not.
+  split.
+  - apply. exact: I.
+  exact.
 Qed.
 
 Lemma dne_False : ~ ~ False -> False.
 Proof.
-  (* rewrite /not. *)
+  rewrite /not.
   apply. exact. Undo 2.
   exact.
 Qed.
 
 Lemma dne_True : ~ ~ True -> True.
 Proof.
+  rewrite /not.
   by []. Undo 1.
   exact. Undo 1.
   by move=> //.
@@ -116,6 +124,7 @@ Proof.
 
   (* Search _ ( left_id _ _). *)
   (* Search _ (right_id _ _). *)
+  rewrite /left_id.
   move=> v. rewrite /addb. done.
   Undo 2.
   by [].
