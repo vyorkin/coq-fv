@@ -156,13 +156,14 @@ Module Lect3.
           move=> q. move: (nq q).
           done.
         * by [].
-    (* case. *)
-    (* - move => q x. *)
-    (*   left. *)
-    (*   exact: q. *)
-    (* - move => all_qpx x. *)
-    (*   right. *)
-    (*   exact: all_qpx x. *)
+    case.
+    - move => q x.
+      left.
+      exact: q.
+    - move => all_px x.
+      right.
+      exact: all_px x.
+    Undo 9.
     case; first by move=> q x; left.
     move=> all_px x.
     right. exact: all_px.
