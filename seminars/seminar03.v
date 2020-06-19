@@ -302,6 +302,21 @@ Section BooleanLogic.
 
 (** [==] is decidable equality operation for types with dec. eq.
     In case of booleans it means [if and only if]. *)
+
+(*
+  [==] это перегруженная функция проверки на равенство
+  ([eq_op] из модуля [eqtype]), а [=] это конструктор типов [eq].
+
+  Конечно, [eq] и [eq_op] между собой связаны:
+  [forall x y, x = y <-> x == y]
+  ([x == y] здесь значит [x == y = true] из-за коэрции [is_true]).
+
+  Между этими двумя представлениями можно переключаться при
+  помощи вида [eqP]: если в голове цели находится [x == y], то
+  [move/eqP] переключит голову на [x = y] и наоборот.
+
+  Чтобы воспользоваться [eqP] нужно импортировать модуль [eqtype]. *)
+
 Fixpoint mostowski_equiv (a : bool) (n : nat) :=
   if n is n'.+1 then mostowski_equiv a n' == a
   else a.
@@ -316,20 +331,25 @@ Fixpoint mostowski_equiv (a : bool) (n : nat) :=
 
 (* ((a == a ...) == a) == a *)
 
-Compute mostowski_equiv false 0.
-Compute mostowski_equiv false 1.
-Compute mostowski_equiv false 2. (* <<- !!! *)
+Compute mostowski_equiv false 0. (* false *)
+Compute mostowski_equiv false 1. (* false == false *-> true *)
+Compute mostowski_equiv false 2. (* false == (false == false) *-> false == true *-> false *)
+
+Compute (odd 0). (* false *)
 
 Lemma mostowski_equiv_even_odd a n :
   mostowski_equiv a n = a || odd n.
 Proof.
   (* Моё решение: *)
 
-  elim: n=> [|n IHn] /=.
-  - by rewrite Bool.orb_false_r.
-  rewrite IHn. clear IHn.
-  About eqbF_neg.
-  case: a=> //=. rewrite eqbF_neg.
+  elim: n=> [|n IHn].
+  - by rewrite Bool.orb_false_r. (* b || false = b *)
+    move=> /=.
+    rewrite IHn. clear IHn.
+
+  (* eqbF_neg b : (b == false) = ~~ b. *)
+  case: a=> //=.
+  rewrite eqbF_neg.
 
   Restart.
 
@@ -345,77 +365,19 @@ Section Arithmetics.
 
 Lemma addnCB m n : m + (n - m) = m - n + n.
 Proof.
-  (* Было бы неплохо как-то элиминировать [m].
-     Для этого нужно для начала раскрыть скобки. *)
-
-  (*           m + (n - m) = m - n + n *)
-  (* m <= n -> m + (n - m) = m + n - m *)
-  rewrite addnBA.
-  rewrite addKn.
-
-  (* Search _ (?a + ?b - ?b = ?a). *)
-  (* Так не получится.
-     Найти нужную лемму можно вот так: *)
-  (* Search _ cancel addn subn. *)
-
-  (* Как же догадаться поискать такое?
-     Существует такая штука, как [cancel]:
-
-     fun (rT aT : Type) (f : aT -> rT) (g : rT -> aT) =>
-       forall x : aT, g (f x) = x
-
-     Т.е. ф-ция [g] нейтрализует [f] *)
-  (* Print cancel. *)
-
-  (* About addKn. Eval hnf in cancel (addn n) (subn^~ n). *)
-  (* n + x - n = x *)
-  (* About addnK. Eval hnf in cancel (addn^~ n) (subn^~ n). *)
-
-  (* apply: eqP. *)
-  (* Eval hnf in self_inverse 0 subn. *)
-
-  (* addn_eq0   forall m n   : nat, (m + n == 0) = (m == 0) && (n == 0) *)
-  (* eqn_add2l  forall p m n : nat, (p + m == p + n) = (m == n) *)
-  (* eqn_add2r  forall p m n : nat, (m + p == n + p) = (m == n) *)
-
-  (* Search _ addn _ in ssrnat. *)
-  (* Search _ subn _ in ssrnat. *)
-
-  (* About addnC. *)
-  (* Eval hnf in commutative addn. *)
-  (* rewrite [in _ - n + n] addnC. *)
-
-  (* About subnn. *)
-  (* Eval hnf in self_inverse 0 subn. *)
-  (* About addn0. *)
-  (* Eval hnf in right_id 0 addn. *)
-  (* About add0n. *)
-  (* Eval hnf in left_id 0 addn. *)
-
-  (* rewrite [in _ - _] subnn. *)
-
-  Restart.
-
-  (* В общем, фиг его знает, этим путём не пройти. *)
-  (* Попробуем поискать что-то типа. *)
-
   Search _ (?m + (?n - ?m)) in ssrnat.
-  (* Находятся 2 леммы:
 
-     subnKC forall m n : nat, m <= n -> m + (n - m) = n
-     ^^ подобным путём мы уже ходили -- он никуда не приводит,
-     тк доказать m <= n в не получится.
-
-     maxnE  forall m n : nat, maxn m n = m + (n - m)
-     ^^ А вот это можно и попробовать. *)
   rewrite -maxnE.
 
   (* Если посмотреть внутрь [rewrite /maxn.], то
      можно увидеть как это будет работать на натуральных числах:
 
-     (if 2 < 3 then 3 else 2) = 2 - 3 + 3 <=>
-                  3         =   0     + 3 <=>
-                  3         =           3
+     (if 2 < 3 then 3 else 2) = (2 - 3) + 3 <=>
+                    3         =    0    + 3 <=>
+                    3         = 3
+
+     В результате вычитания натуральных чисел не может
+     получиться отрицательное число.
   *)
 
   (* Поищем что у нас ещё есть про "maxn" подходящего для док-ва:
@@ -424,6 +386,7 @@ Proof.
   Search _ "maxn" in ssrnat.
   (* maxnE  forall m n : nat, maxn m n = m + (n - m) *)
   (* maxnC  commutative maxn *)
+
   Eval hnf in commutative maxn.
 
   rewrite maxnC.
@@ -653,7 +616,6 @@ Qed.
 End Arithmetics.
 
 
-
 Section Misc.
 (** Exlpain why the following statement is unprovable *)
 
@@ -686,9 +648,13 @@ into the following equality [f1 b = f2 b] *)
     would never come up with a proof for the admitted goal. *)
 Abort.
 
+(* Если [B] пустой тип, то мы никогда не сможем "вызвать" [const],
+   что необходимо сделать, чтобы сконструировать\предъявить
+   нужные нам два соответствующих (равных) терма. *)
+
 (** Yet another explanation of the above unprovability fact
     It is known that Coq's theory is compatible with the axiom of functional extensionality.
-    This means that is we assume that axiom, then proving [const_eq] must not
+    This means that if we assume that axiom, then proving [const_eq] must not
     lead to a contradiction.
     Let's show this is not the case here.
  *)

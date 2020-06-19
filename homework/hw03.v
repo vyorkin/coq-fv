@@ -14,7 +14,7 @@ Lemma drinker_paradox (P : nat -> Prop) :
   exists x, P x -> forall y, P y.
 Proof.
   apply: DNE.
-  (* rewrite /not. *)
+  rewrite /not.
   move=> not_DP.
   apply: (not_DP).
 
