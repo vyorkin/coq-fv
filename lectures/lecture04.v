@@ -70,19 +70,27 @@ Qed.
 Lemma factorial_iter_correct n :
   factorial_iter n = n`!.
 Proof.
+  (* [/=] это [simpl], а [simpl] не раскрывает 2 определения подряд *)
   elim: n =>/=.
   Undo.
 
   elim: n => // n _.
-  rewrite /factorial_iter.
-  (* rewrite /factorial_iter in IHn. *)
+  (* "ключ" [/=] можно использовать и вместе с
+      другими тактиками (не только [move] и [case]). *)
+  rewrite /factorial_iter /=.
+
+  (* Определения можно разворачивать не
+     только в цели, но и в гипотезах:
+
+     rewrite /factorial_iter in IHn. *)
+
   (* В ssreflect не работает [rewrite Smth in *] и *)
   (* это не рекомендуемый стиль. *)
-  move=>/=.
   rewrite factorial_mul_correct.
   rewrite muln1.
   rewrite /factorial /=.
-  by rewrite mulnC.
+  rewrite mulnC.
+  done.
 
   Restart.
 
@@ -122,6 +130,9 @@ Abort.
 (* The heuristic avoids to perform a simplification step
    that would expose a match construct in head position *)
 Arguments fib n : simpl nomatch.
+
+(* [simpl nomatch] значит не упрощать,
+   если в результате появится паттерн-матчинг. *)
 
 Lemma after_simpl_nomatch :
   fib n.+2 = 0.
@@ -188,15 +199,24 @@ Proof.
   move=> p0 p1 step n.
   (* elim: n=> // n IHn. *)
 
+  (* Нужно откуда-то взять [P n.+1], но неоткуда *)
+
+  (* Парадокс изобретателя! *)
   (* Усилим цель (чтобы получить более сильную гипотезу индукции) *)
+
   suffices: P n /\ P n.+1.
-  (* Нужно иметь ввиду, что [have: P n /\ P n.+1.] это тоже самое,
+  (* [have: P n /\ P n.+1.] это тоже самое,
      только подцели появятся в обратном порядке. *)
   (* В ванильном Coq есть аналогичная тактика [enough] *)
 
   case.
   move=> pn _.
   exact: pn.
+  Undo 3.
+  by case.
+
+  elim: n=> // n [IHn1 IHn2].
+  Undo.
 
   elim: n.
   - by [].
@@ -219,22 +239,24 @@ Proof.
   suffices: P n /\ P n.+1.
   by case.
   elim: n=> // n [IHn1 IHn2].
+  (* Левый можно сразу доказать используя ключ [//],
+     тк [P n.+1] у нас есть в контексте. *)
   split=> //.
   apply: step.
   - exact: IHn1.
   - exact: IHn2.
 
-  Undo 10.
+  Restart.
 
   move=> p0 p1 step n; suffices: P n /\ P n.+1 by case.
   (* elim: n=> // n [/step]. *)
   elim: n=> // n. move=>[]. move/step => impl.
   by move=> /dup[/impl].
 
-  Undo 5.
+  Restart.
 
   (* Желательно объединять несколько тактик в одну,
-     когда они формируют некоторый шаг в неформальном док-ве *)
+     когда они формируют некоторый шаг в неформальном док-ве. *)
 
   move=> p0 p1 Istep n; suffices: P n /\ P n.+1 by case.
   by elim: n=> // n [/Istep pn12] /dup[/pn12].
