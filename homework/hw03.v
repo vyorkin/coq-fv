@@ -16,9 +16,14 @@ Proof.
   apply: DNE.
   rewrite /not.
   move=> not_DP.
+  (* Применив обратное рассуждение мы показали, что для того, чтобы
+     доказать ложь в данном случае достаточно доказать исходное утверждение.
+     Но теперь мы имеем в контексте отрицание исходного утверждения,
+     которым сможем воспользоваться далее. *)
   apply: (not_DP).
-
-  exists 0. (* Выберем произвольного человека *)
+  (* Выберем произвольного человека *)
+  exists 0.
+  (* То же самое можно сделать и так: *)
   Undo.
   About ex_intro.
   apply: (ex_intro _ 0).
@@ -28,6 +33,8 @@ Proof.
   apply: DNE.
   (* rewrite /not. *)
   move=> not_Py.
+  (* Здесь используется тот же "трюк", что и выше:
+     мы получаем в контексте отрицание доказываемого утверждения. *)
   apply: (not_Py).
 
   (* Здесь паттерн-матчинг делается по доказательству [False] для
@@ -35,10 +42,10 @@ Proof.
      (т.е. мы пользуемся приципом "ex falso quodlibet" или "прицип взрыва"),
      а для того, чтобы можно было этим доказательством воспользоваться мы
      должны сначала доказать предпосылку:
-     [exists x : nat, P x -> forall y : nat, P y] *)
+     [exists x : nat, P x -> forall y : nat, P y]. *)
 
   (* Другими словами для функций (а [not_DP] является функцией) разбор
-     случаев делается для типа результата функции *)
+     случаев делается для типа результата функции. *)
 
   (* Если у нас есть [(P -> False) -> Q] то, если мы докажем [False],
      то мы докажем что угодно (и [Q] в том числе), тк
@@ -47,12 +54,12 @@ Proof.
 
      Поэтому если сделать [case.] для такой цели [(P -> False) -> Q], то Coq нас
      сразу просит доказать только [P], тк доказав это вот [P] мы "автоматически докажем"
-     вообще что угодно *)
+     вообще что угодно. *)
 
   case: not_DP.
   Undo. (* Посмотрим на это немного подробнее *)
   move: not_DP.
-  rewrite /not. (* Получим утв. вида [(P -> False) -> Q] *)
+  (* Получим утв. вида [(P -> False) -> Q] *)
   case. (* Доказав [P] докажем что угодно *)
 
   (* В формулировке теорем exists - нотация,
@@ -75,9 +82,55 @@ Proof.
   by exists y => /nPy.
 Qed.
 
+(* Альтернативная и более общая формулировка леммы:
+   не только для натуральных чисел, а для любого обитаемого типа. *)
+
+
+(* [inhabited] Это просто утверждение (в [Prop] / пропозициональном контекстe)
+   о том, что некий тип [A] обитаем. Определение:
+
+   Inductive inhabited (A:Type) : Prop :=
+     inhabits : A -> inhabited A. *)
+
 Lemma inhabited_exists A :
   (exists x : A, True) <-> inhabited A.
 Proof.
+  (* Оставил, чтобы явно прошагать *)
+
+  split.
+  case.
+  move=> x t.
+
+  (* Многие тактики, унаследованные от ванильного Coq,
+     сначала делают [intros (move=> ...)] если работают на
+     целях, для которых они не предназначены.
+
+     [split] по сути берет (единственный) конструктор для
+     типа данных цели и делает apply с ним.
+
+     В данном случае это эквивалентно:
+
+        move=> x t.
+        constructor.
+
+     Но не в общем, т.к. [split] ожидает, что у типа будет
+     только один конструктор и выдаст ошибку в противном случае. *)
+
+  split.
+  Undo.
+
+  constructor.
+  exact: x.
+  case.
+  move=> x.
+  exists.
+  exact: x.
+  exact: I.
+  Undo 3.
+  by exists.
+
+  Restart.
+
   by split; case.
 Qed.
 
@@ -302,7 +355,6 @@ Proof. by move=> g_id f12g a; move: (f12g a)=> /=; rewrite g_id. Qed.
 End eq_comp.
 
 
-
 (** You might want to use the lemmas from seminar02.v, section [eq_comp] *)
 Section PropertiesOfFunctions.
 
@@ -324,17 +376,50 @@ Definition epic (f : A -> B) :=
 
 Lemma surj_epic f : surjective f -> epic f.
 Proof.
-  rewrite /surjective /epic /eqfun.
-  (* "=1" : eqfun : forall A B : Type, (B -> A) -> (B -> A) -> Prop *)
-  Print eqfun.
-  About eq_compr.
-  About compA.
-  About eq_idr.
-  case=> g H_id.
+  rewrite /epic /surjective.
+
+  case=> g inv_g C g1 g2.
+  move=> eqEv.
+
+  (* eq_compr (f g : B -> C) (h : A -> B) :
+     f =1 g -> f \o h =1 g \o h. *)
+
+  (* g : B -> A *)
+  (* ev : g1 \o f =1 g2 \o f *)
+
+
+  (* g1 \o f =1 g2 \o f -> f \o h =1 g \o h.*)
+  (* g1 \o f =1 g2 \o f -> (g1 \o f) \o h =1 (g2 \o f) \o h.*)
+
+  move: (eq_compr g eqEv).
+
+  Undo 2.
+
+  move=> /(eq_compr g).
+
+  (*  g1 \o f       =1  g2 \o f       -> g1 =1 g2 *)
+  (* (g1 \o f) \o g =1 (g2 \o f) \o g -> g1 =1 g2 *)
+
+  rewrite compA.
+  rewrite compA.
+  move=> /(eq_idr inv_g).
+
+  done.
+
+  Restart.
+
+  by case=> g inv_g C g1 g2 => /(eq_compr g); rewrite 2!compA => /(eq_idr inv_g).
 Qed.
 
 Lemma epic_surj f : epic f -> surjective f.
   (** Why is this not provable? *)
+  rewrite /epic /surjective.
+  (** A short answer:
+      to prove a function surjective we need to explicitly provide its inverse,
+      which is not possible in general. We know nothing about type [A],
+      so we cannot construct a function of type [B -> A]
+      unless there is a contradictory statement in our premises,
+      which is not he case here. *)
 Abort.
 
 End SurjectiveEpic.
@@ -346,7 +431,18 @@ Context {A B C : Type}.
 Lemma epic_comp (f : B -> C) (g : A -> B) :
   epic f -> epic g -> epic (f \o g).
 Proof.
-Admitted.
+  rewrite /epic.
+  move=> H1 H2 D g1 g2.
+  rewrite -compA.
+  rewrite -compA.
+  move=> evEq.
+  (* move: (H2 D (g1 \o f) (g2 \o f) evEq). *)
+  (* Можно попросить Coq вывести типы за нас *)
+  move: (H2 _ _ _ evEq).
+  move=> evEq'.
+  move: (H1 _ _ _ evEq').
+  done.
+Qed.
 
 Lemma comp_epicl (f : B -> C) (g : A -> B) :
   epic (f \o g) -> epic f.
