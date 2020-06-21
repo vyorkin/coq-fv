@@ -162,6 +162,10 @@ Proof.
   move=>//=. (* Равны по определению [fib_iter] *)
 Qed.
 
+(* Показывает, что итеративная версия обладает таким же
+   свойством относительно внутренней реализации, что и рекурсивная.
+   Т.е. что каждое следующее число это сумма двух предыдущих. *)
+
 Lemma fib_iter_sum n f0 f1 :
   fib_iter n.+2 f0 f1 =
   fib_iter n f0 f1 + fib_iter n.+1 f0 f1.
@@ -199,10 +203,13 @@ Proof.
   move=> p0 p1 step n.
   (* elim: n=> // n IHn. *)
 
-  (* Нужно откуда-то взять [P n.+1], но неоткуда *)
+  (* Нужно откуда-то взять [P n.+1], но неоткуда, тк нехватает информации в
+     гипотезе индукции и в остальном контексте.
+     Обычно это значит, что нужно попробовать, например, как-то изменить цель,
+     добавить в неё какие-то данные итд. *)
 
   (* Парадокс изобретателя! *)
-  (* Усилим цель (чтобы получить более сильную гипотезу индукции) *)
+  (* Усилим цель, чтобы получить более сильную гипотезу индукции. *)
 
   suffices: P n /\ P n.+1.
   (* [have: P n /\ P n.+1.] это тоже самое,
@@ -266,25 +273,64 @@ Qed.
 Lemma fib_iter_correct n :
   fib_iter n 0 1 = fib n.
 Proof.
+  (* [elim] по-умолчанию применяет принцип индукции [nat_ind].
+     Но мы хотим использовать наш принцип, определённый выше.
+  *)
+
+  elim: n. Undo.
+  elim/nat_ind: n. Undo.
+
   elim/nat_ind2: n.
-  Undo.
+
+  (* Для принципа индукции [nat_ind2] мы получим уже
+     3 подцели, вместо стандартных 2-х.
+     Сколько препосылок в принципе индукции - столько и подцелей. *)
+
+  - rewrite /fib_iter.
+    rewrite /fib.
+    done.
+  - rewrite /fib_iter.
+    rewrite /fib.
+    done.
+
+  (* Т.е. первые 2 подцели тривиальны. *)
+
+  Restart.
   elim/nat_ind2: n=> // n IHn1 IHn2.
   move=>/=.
   rewrite -IHn1. rewrite -IHn2.
-  Undo 4.
+  move=>/=.
+
+  (* Это ни к чему не приведёт, тк мы ничего не знаем про [n].
+     Т.е. мы уже сделали индукцию по [n]. Можно продолжить её
+     делать и дальше, но новой информации мы не получим. *)
+
+  Restart.
 
   elim/nat_ind2: n=> // n IHn0 IHn1.
-  by rewrite fib_iter_sum /= -IHn0 -IHn1 addnC.
-  Undo 2.
+  rewrite fib_iter_sum.
+  move=>/=.
+  rewrite -IHn0.
+  rewrite -IHn1.
+
+  move=>/=.
+  (* Финальное упрощение ни на что не влияет
+     ([by] или [done] сделают его автоматически).
+     Оставил просто для возможности интерактивно
+     прошагать и разобраться как это работает детально. *)
+
+  done.
+
+  Restart.
+
   elim/nat_ind2: n=> // n IHn0 IHn1.
   by rewrite fib_iter_sum IHn0 IHn1.
 Qed.
+
 (** Note: fib_iter_correct can be proven using
     suffices:
      (fib_iter n 0 1 = fib n /\ fib_iter n.+1 0 1 = fib n.+1).
- *)
-
-
+*)
 
 (** * Another way is to provide a spec for fib_iter *)
 
@@ -337,17 +383,40 @@ Qed.
     - strong induction;
     - well-founded induction;
     - course-of-values induction
+
+    По-русски:
+    - полная индукция
+    - сильная индукция
  *)
 
+
+(* В отличие от обычной индукции, в полной/сильной индукции
+   у нас отстутствует базовый случай [P 0], а вместо предпосылки
+   индуктивного перехода у нас более сильная предпосылка о том, что
+   свойство выполняется для всех предыдущих элементов. *)
 
 Lemma lt_wf_ind (P : nat -> Prop) :
   (forall m, (forall k : nat, (k < m) -> P k) -> P m) ->
   forall n, P n.
 Proof.
-  move=> m n.
-  Search _ (_ < _ ).
-Admitted.
+  move=> H n.
 
+  (* Search _ (_ <= _) "le" in ssrnat. *)
+  (* leq0n    0 <= n *)
+  (* leqnn    n <= n *)
+  (* eq_leq   m = n -> m <= n *)
+  (* leqnSn   n <= n.+1 *)
+  (* leq_pred n.-1 <= n *)
+
+  Search _ (_ < _) "le" in ssrnat.
+
+  apply: H.
+  move=> k H.
+  move: (leqnn n)=> H0.
+  (* leq_ltn_trans m <= n -> n < p -> m < p *)
+  (*               n <= n -> k < n) *)
+  (* Check (leq_ltn_trans H0 H _). *)
+Admitted.
 
 (** In SSReflect/Mathcomp one does not use
     a custom principle like above
@@ -358,15 +427,66 @@ Admitted.
 Lemma fib_iter_correct''' n :
   fib_iter n 0 1 = fib n.
 Proof.
-elim: n {-2}n (leqnn n)=> [[]//|n IHn].
-case=> //; case=> // n0.
-rewrite fib_iter_sum.
-move=> /dup[/ltnW/IHn-> ].
-by rewrite ltnS=> /IHn->.
-Qed.
+  (* {-2} -- occurence switch *)
 
 
+  elim: n {-2}n (leqnn n)=> [[]//|n IHn].
 
+  case=> //; case=> // n0.
+  rewrite fib_iter_sum.
+  move=> /dup[/ltnW/IHn-> ].
+  by rewrite ltnS=> /IHn->.
+
+  Restart.
+
+  (* Как разбирать загольфенные док-ва.
+
+     [tactic: foo bar] значит
+     - выполнить перемещение в цель [move: foo bar]
+     - запустить тактику [tactic]
+   *)
+
+  move: n {-2}n (leqnn n). Undo.
+  (* Тактики с [:] читаются справа-налево.
+     Т.е. [move] выше можно переписать так: *)
+
+  move: (leqnn n). move: {-2}n. move: n. Undo 3.
+
+  (* Далее мы просто добавляем в цель некоторое уже доказанное утверждение
+     о том, что каждое натуральное число <= самому себе. *)
+  move: (leqnn n). (* leqnn : forall n : nat, n <= n *)
+
+  (* Можно обобщить цель вообще по всем [n]. *)
+  move: n. Undo.
+
+  (* А можно обобщить по всем [n], кроме 2-го вхождения:
+
+     n <= n -> fib_iter n 0 1 = fib n
+     ^    ^             ^           ^
+     1    2             3           4
+         это
+   *)
+
+  move: {-2}n.
+  move: n.
+  elim.
+  - case. rewrite /fib. rewrite /fib_iter. move=> _. done.
+    done. (* n < 0 -> ... -- exfalso quodlibet *)
+  move=> n IHn.
+  case=> //.
+  case=> // n0.
+  case=> H'.
+  move: (ltnW H').
+  (* ltnW -- ослабление неравенства *)
+  (* Lemma ltnW m n : m < n -> m <= n. *)
+  rewrite IHn.
+  rewrite ltnS.
+  move=> H1.
+  move: (IHn n0 H1)=> H2.
+  done.
+  move: H'.
+
+Admitted.
 
 
 (*** Lists *)
