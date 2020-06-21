@@ -68,6 +68,8 @@ Proof.
   elim.
   Restart.
   by elim/nat_ind: n.
+  Restart.
+  by move: n; elim.
 Qed.
 
 Fixpoint fib (n : nat) : nat :=
@@ -92,7 +94,7 @@ Proof.
   (* subnBA     forall m n p : nat, p <= n -> m - (n - p) = m + p - n *)
 
   move=> H.
-Qed.
+Admitted.
 
 Lemma fib_monotone m n :
   m <= n -> fib m <= fib n.
