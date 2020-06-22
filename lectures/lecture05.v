@@ -24,15 +24,19 @@ Proof.
 (* Print filter. *)
 
 elim: s=> //= x s IHs.
+case.
+
 rewrite /is_true.
 (* About andP. *)
 move=> /andP.
 (* Set Printing Coercions. *)
 rewrite /is_true.
 move=> [].
-move=> ->.
+move=> H.
+rewrite H.
 move/IHs. (* move=> top. move: (IHs top). *)
-move=>->.
+move=> H'.
+rewrite H'.
 done.
 
 Restart.

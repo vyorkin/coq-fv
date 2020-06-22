@@ -495,8 +495,9 @@ From mathcomp Require Import ssrnat ssrbool eqtype seq path.
 (** Note that we added [seq] and [path] modules to imports *)
 
 (** [seq] is a Mathcomp's notation for [list] data type *)
-Print seq.
-Print list.
+
+Print seq.  (* Стандартные вещи для списков: map, filter, ++, etc. *)
+Print list. (* Определения и леммы для работы с сортированными списками. *)
 
 (**
    Inductive list (A : Type) : Type :=
@@ -531,6 +532,13 @@ Check list_ind :
     forall l : seq A, P l.
 
 by elim: xs=> //= x xs' ->.
+Restart.
+
+elim: xs. move=>/=. done.
+move=> x xs' H.
+move=>/=.
+rewrite H.
+done.
 Qed.
 
 End StructuralInduction.

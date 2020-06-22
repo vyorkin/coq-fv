@@ -196,6 +196,35 @@ Proof.
   by [].
 Qed.
 
+Lemma prod_inj (A B : Type) (x y: (A * B)) :
+  x = y <-> (x.1, x.2) = (y.1, y.2).
+Proof.
+  split.
+  move=> x_eq_y.
+  - rewrite x_eq_y. done.
+  case.
+  case: x.
+  case: y.
+  move=> /=.
+  move=> x y x' y'.
+  move=> Heq1 Heq2.
+  rewrite Heq1.
+  rewrite Heq2.
+  done.
+
+  Restart.
+
+  by move: x y=> [x1 x2] [y1 y2].
+
+  Restart.
+
+  move: x y=> [x1 x2] [y1 y2].
+  move=> /=.
+  split.
+  apply.
+  apply.
+Qed.
+
 Lemma min_plus_r  n m p  :
   minn n m = n -> minn n (m + p) = n.
 Proof.

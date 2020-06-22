@@ -533,7 +533,6 @@ Proof.
        [in (n * m + n * n)]addnC
        subnDr 2!mulnn.
 
-
   Restart.
 
   by rewrite mulnBl !mulnDr addnC mulnC subnDl.
