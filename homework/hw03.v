@@ -295,7 +295,15 @@ Restart.
 
 case: (leqP m n) => [le_mn | /ltnW/minn_idPl min_n].
 - rewrite minnE.
-  rewrite -{1}(subnKC le_mn) -{2}(add0n (n-m)) subnDr subn0.
+  (* subnKC : forall [m n : nat], m <= n -> m + (n - m) = n *)
+  rewrite -{1}(subnKC le_mn).
+  (* subnDr : forall p m n : nat, m + p - (n + p) = m - n *)
+  (* subn0 : right_id 0 subn *)
+  (* add0n : left_id 0 addn *)
+  rewrite -{2}(add0n (n - m)).
+  Fail rewrite [in m + (n - m)]subnDr.
+  Abort.
+  rewrite subn0.
   by rewrite addn_minr subnKC.
 - move: (min_n)=> /subn_leq0 ->.
   rewrite min0n addn0 min_n.

@@ -8,14 +8,16 @@ Section IntLogic.
 
 (* Вот так надо искать (впихивая коэрции самостоятельно\явно) *)
 Search _ ((is_true (?m <= ?n)) -> (is_true (?n <= ?p)) -> (is_true (?m <= ?p))).
+
 (* А ещё можно искать в конкретном модуле *)
-Search _ involutive in seq.
+(* Search _ involutive in seq. *)
+
 (* А вот тут [?a], [?b] и [?c] это мета-переменные,
    т.е. все значения, которые может принимать [?имя] в
    разных частях шаблона совпадают *)
 Search _ ((?b - ?a) + ?c = (?b + ?c) - ?a).
 
-Search cancel in ssrnat.
+Search cancel inside ssrnat.
 
 (* Frobenius rule: existential quantifiers and conjunctions commute *)
 Lemma frobenius A (P : A -> Prop) Q :
@@ -108,7 +110,7 @@ Proof.
      Нам нужны два "взаимнообратных" предиката, так чтобы по
      отдельности они были доказуемы на каких-то значениях, а
      вместе -- ни для одного значения.
-      *)
+  *)
 
   About ex_intro.
 
@@ -140,14 +142,27 @@ Proof.
      если [x] ложь. *)
 
   move=> H.
+
+  (* На bool легко подобрать такие ф-ции, рассмотрим исходное
+     утверждение и подставим конкретный тип + коэрции, чтобы
+     сделать утверждение более интуитивно-очевидным: *)
+
+  (* (A : Type) (P Q : A -> Prop),
+     (exists x : A, P x) /\ (exists x : A, Q x) ->
+      exists x : A, P x /\ Q x -> False *)
+
+  (* (bool : Type) (id not : bool -> Prop),
+     (exists x : bool, is_true (id x)) /\ (exists x : bool, is_true (not x)) ->
+      exists x : bool, is_true (id x) /\ is_true (not x) -> False *)
+
   case: (H bool id not).
   - split.
-    + by exists true.
+    + exact: (ex_intro is_true true).
       Undo.
-      exact: (ex_intro is_true true).
-    + by exists false.
+      by exists true.
+    + exact: (ex_intro (not \o is_true) false).
       Undo.
-      exact: (ex_intro (not \o is_true) false).
+      by exists false.
   move=> b.
   case.
   rewrite /not.
@@ -176,7 +191,14 @@ Qed.
 *)
 Lemma curry_dep A (P : A -> Prop) Q :
   ((exists x, P x) -> Q) -> (forall x, P x -> Q).
-Proof. by move=> f x px; apply: f; exists x. Qed.
+Proof.
+  move=> f x px.
+  apply: f. (* Обратное рассуждение *)
+  exists x. (* x у нас есть *)
+  exact: px (* Доказательство утверждения о x у нас тоже есть *).
+  Restart.
+  by move=> f x px; apply: f; exists x.
+Qed.
 
 (* Если не для всех [x] утверждение [P x] не истинно,
    то существует такой [x], для которого оно истинно. *)
@@ -192,9 +214,9 @@ Definition DNE := forall (P : Prop), ~ ~ P -> P.
 Lemma not_for_all_is_exists_iff_dne :
   not_forall_exists <-> DNE.
 Proof.
-  rewrite /not_forall_exists /DNE /not.
+  rewrite /not_forall_exists /DNE.
 
-  (* например, для биимпликации (IFF)
+  (* Например, для биимпликации (IFF)
      [split=> [H1 | H2]] для каждой импликации помещает в контекст
      соответствующую ей предпосылку (левую или правую соответственно) *)
   split=> [nfe | dne].
@@ -365,7 +387,7 @@ Section Arithmetics.
 
 Lemma addnCB m n : m + (n - m) = m - n + n.
 Proof.
-  Search _ (?m + (?n - ?m)) in ssrnat.
+  Search _ (?m + (?n - ?m)) inside ssrnat.
 
   rewrite -maxnE.
 
@@ -383,7 +405,7 @@ Proof.
   (* Поищем что у нас ещё есть про "maxn" подходящего для док-ва:
      maxn m n = m - n + n
   *)
-  Search _ "maxn" in ssrnat.
+  Search _ "maxn" inside ssrnat.
   (* maxnE  forall m n : nat, maxn m n = m + (n - m) *)
   (* maxnC  commutative maxn *)
 
@@ -455,7 +477,7 @@ Proof.
   (* Что-то нашли. Полезным пока кажется только [mulnn].
      А ещё у нас есть скобки, и нам нужно их раскрыть. *)
   Search _ (muln (?m _ ?n) _).
-  Search _ "muln" in ssrnat.
+  Search _ "muln" inside ssrnat.
   (* Cледующие несколько лемм выглядят полезными: *)
 
   (* mulnDl left_distributive muln addn *)
@@ -504,7 +526,7 @@ Proof.
 
   rewrite addnC.
 
-  Search _ "add" in ssrnat.
+  Search _ "add" inside ssrnat.
 
   (* Ну вот, тупик. Возможно, стоит попробовать иначе раскрыть скобки.
      Кажется, мне нужно, чтобы сложение оказалось внутри скобок каким-то образом. *)
@@ -593,13 +615,13 @@ Proof.
   (* Но пока не понятно что именно это нам даёт, вернём обратно *)
   rewrite mostowski_equiv_even_odd.
   (* Посмотрим что у нас есть про нечётные числа и про степени. *)
-  Search (_ ^ _) in ssrnat.
+  Search (_ ^ _) inside ssrnat.
   elim: n.
   - by rewrite expn0.
   - move=> n IHn //=.
     (* expnS  forall m n : nat, m ^ n.+1 = m * m ^ n *)
     rewrite expnS.
-    Search _ "odd" in ssrnat.
+    Search _ "odd" inside ssrnat.
     (* odd_mul  forall m n : nat, odd (m * n) = odd m && odd n *)
     rewrite odd_mul.
     rewrite IHn.

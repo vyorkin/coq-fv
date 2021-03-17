@@ -557,7 +557,7 @@ Proof.
       rewrite /right_id.
       (* А вот тут уже только по индукции *)
 
-      elim.ag
+      elim.
       - by [].
       - move=> n IHn.
         About addSn.
